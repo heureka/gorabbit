@@ -1,0 +1,192 @@
+# This file contains all available configuration options
+# with their default values.
+
+# options for analysis running
+run:
+  # timeout for analysis, e.g. 30s, 5m, default is 1m
+  timeout: 5m
+
+# all available settings of specific linters
+linters-settings:
+  errorlint:
+    # Check whether fmt.Errorf uses the %w verb for formatting errors. See the readme for caveats
+    errorf: true
+    # Check for plain type assertions and type switches
+    asserts: true
+    # Check for plain error comparisons
+    comparison: true
+
+  exhaustive:
+    # check switch statements in generated files also
+    check-generated: false
+    # indicates that switch statements are to be considered exhaustive if a
+    # 'default' case is present, even if all enum members aren't listed in the
+    # switch
+    default-signifies-exhaustive: true
+
+  forbidigo:
+    # Forbid the following identifiers (identifiers are written using regexp):
+    forbid:
+      - ^print.*$
+      - 'fmt\.Print.*'
+    # Exclude godoc examples from forbidigo checks.  Default is true.
+    exclude_godoc_examples: false
+
+  gocognit:
+    # minimal code complexity to report, 30 by default (but we recommend 10-20)
+    min-complexity: 15
+
+  gocritic:
+    # Enable multiple checks by tags, run `GL_DEBUG=gocritic golangci-lint run` to see all tags and checks.
+    # Empty list by default. See https://github.com/go-critic/go-critic#usage -> section "Tags".
+    enabled-tags:
+      - performance
+      - diagnostic
+      - style
+
+    disabled-checks:
+      - unnamedResult
+
+    # Settings passed to gocritic.
+    # The settings key is the name of a supported gocritic checker.
+    # The list of supported checkers can be find in https://go-critic.github.io/overview.
+    settings:
+      hugeParam:
+        # size in bytes that makes the warning trigger (default 80)
+        sizeThreshold: 128
+
+  gocyclo:
+    # minimal code complexity to report, 30 by default (but we recommend 10-20)
+    min-complexity: 15
+
+  gofmt:
+    # simplify code: gofmt with `-s` option, true by default
+    simplify: true
+
+  gomoddirectives:
+    # Allow local `replace` directives. Default is false.
+    replace-local: false
+    # List of allowed `replace` directives. Default is empty.
+    replace-allow-list: []
+    # Allow to not explain why the version has been retracted in the `retract` directives. Default is false.
+    retract-allow-no-explanation: false
+    # Forbid the use of the `exclude` directives. Default is false.
+    exclude-forbidden: false
+
+  gosimple:
+    # Select the Go version to target. The default is '1.13'.
+    go: "1.16"
+    # https://staticcheck.io/docs/options#checks
+    checks: [ "all" ]
+
+  govet:
+    # report about shadowed variables
+    check-shadowing: false
+
+  lll:
+    # max line length, lines longer will be reported. Default is 120.
+    # '\t' is counted as 1 character by default, and can be changed with the tab-width option
+    line-length: 140
+
+  nolintlint:
+    # Disable to ensure that nolint directives don't have a leading space. Default is true.
+    allow-leading-space: false
+
+  rowserrcheck:
+    packages:
+      - github.com/jmoiron/sqlx
+
+  revive:
+    # see https://github.com/mgechev/revive#available-rules for details.
+    ignore-generated-header: false
+    severity: warning
+    errorCode: 1
+    warningCode: 1
+    rules: # recommended config is set here https://github.com/mgechev/revive#recommended-configuration
+      - name: blank-imports
+      - name: context-as-argument
+      - name: context-keys-type
+      - name: dot-imports
+      - name: error-return
+      - name: error-strings
+      - name: error-naming
+      - name: exported
+      - name: if-return
+      - name: increment-decrement
+      - name: var-naming
+      - name: var-declaration
+      - name: package-comments
+      - name: range
+      - name: receiver-naming
+      - name: time-naming
+      - name: unexported-return
+      - name: indent-error-flow
+      - name: errorf
+      - name: empty-block
+      - name: superfluous-else
+      - name: unused-parameter
+      - name: unreachable-code
+      - name: redefines-builtin-id
+
+  staticcheck:
+    # Select the Go version to target. The default is '1.13'.
+    go: "1.16"
+    # https://staticcheck.io/docs/options#checks
+    checks: [ "all" ]
+
+  stylecheck:
+    # Select the Go version to target. The default is '1.13'.
+    go: "1.16"
+    # https://staticcheck.io/docs/options#checks
+    checks: [ "all"  ]
+
+  unused:
+    # Select the Go version to target. The default is '1.13'.
+    go: "1.16"
+
+linters:
+  enable-all: true
+  disable:
+    - scopelint # deprecated
+    - nlreturn # no need to check for blank line before return
+    - wsl # we know better where to put blank lines
+    - testpackage # FIXME
+    - paralleltest # no idea why we'd need it
+    - exhaustivestruct # is meant to be used only for special cases. It is not recommended to use it for all files in a project.
+    - gomnd # triggers too often, like in places like 10*millisecond
+    - golint # deprecated
+    - funlen # gocognit does a better job
+    - interfacer # deprecated
+    - godox # no use, we are checking it in reviews
+    - gofumpt # too opinionated, we already have gofmt and goimports
+    - goheader # no need to check for licence headers
+    - maligned # deprecated
+    - gci # conflicts with goimports
+    - cyclop # gocognit does better job
+    - wrapcheck # we not always want to wrap error
+    - promlinter # good to have, but we already started with bad naming
+    - tagliatelle # no use for us as tags are autogenerated by golang
+
+
+issues:
+  # Excluding configuration per-path, per-linter, per-text and per-source
+  exclude-rules:
+    # Exclude some linters from running on tests files.
+    - path: _test\.go
+      linters:
+        - errcheck
+        - dupl
+        - funlen # test can have long function names
+        - gochecknoglobals # can have global variables in tests
+        - goerr113
+        - wrapcheck # no need to check for wrapped errors in tests
+        - noctx # allowed to do requests without context in tests
+
+
+    # Exclude lll issues for long lines with go:generate
+    - linters:
+        - lll
+      source: "^//go:generate "
+
+  # Fix found issues (if it's supported by the linter)
+  fix: true
