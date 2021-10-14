@@ -72,7 +72,7 @@ func (r *Reconnector) ConsumeReconn(
 		defer close(deliveries)
 
 		for {
-			if !r.Channel.IsClosed() {
+			if r.Channel.IsClosed() {
 				err := r.reconnect()
 				if err != nil { // can't reconnect event after retries
 					r.notifyError(fmt.Errorf("reconnect: %w", err))
