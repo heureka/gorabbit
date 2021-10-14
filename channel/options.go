@@ -9,7 +9,7 @@ import (
 // Will send errors appeared during reconnection process to provided channel.
 func WithNotifyErrors(ch chan<- error) Option {
 	return func(r *Reconnector) {
-		r.reconnectErrors = ch
+		r.reconnectErrors = append(r.reconnectErrors, ch)
 	}
 }
 
@@ -18,7 +18,7 @@ func WithNotifyErrors(ch chan<- error) Option {
 // Could be used to set up QoS or listeners for various evens (NotifyClose, NotifyFlow, etc.) after channel recreation.
 func WithReconnectionCallback(fn func(channel *amqp.Channel) error) Option {
 	return func(r *Reconnector) {
-		r.onReconnect = fn
+		r.onReconnect = append(r.onReconnect, fn)
 	}
 }
 

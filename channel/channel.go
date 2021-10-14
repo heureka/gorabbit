@@ -17,8 +17,8 @@ type Reconnector struct {
 	conn    *amqp.Connection
 	backoff backoff.BackOff
 
-	onReconnect     func(*amqp.Channel) error
-	reconnectErrors chan<- error
+	onReconnect     []func(*amqp.Channel) error
+	reconnectErrors []chan<- error
 }
 
 func New(conn *amqp.Connection, ops ...Option) (*Reconnector, error) {
@@ -118,8 +118,8 @@ func (r *Reconnector) reconnect() error {
 			return fmt.Errorf("create channel: %w", err)
 		}
 
-		if r.onReconnect != nil {
-			if err := r.onReconnect(r.Channel); err != nil {
+		for _, fn := range r.onReconnect {
+			if err := fn(r.Channel); err != nil {
 				return fmt.Errorf("on reconnet callback: %w", err)
 			}
 		}
@@ -137,7 +137,7 @@ func (r *Reconnector) reconnect() error {
 }
 
 func (r *Reconnector) notifyError(err error) {
-	if r.reconnectErrors != nil {
-		r.reconnectErrors <- err
+	for _, ch := range r.reconnectErrors {
+		ch <- err
 	}
 }
