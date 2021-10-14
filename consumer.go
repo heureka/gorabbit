@@ -154,8 +154,8 @@ func (c *Consumer) Stop() error {
 	return nil
 }
 
-// consumerTagSetter sets consumerTag from deliveries.
-func consumerTagSetter(consumerTag *string, deliveries <-chan amqp.Delivery) <-chan amqp.Delivery {
+// consumerTagProxy sets consumerTag from deliveries.
+func consumerTagProxy(consumerTag *string, deliveries <-chan amqp.Delivery) <-chan amqp.Delivery {
 	proxy := make(chan amqp.Delivery)
 	var once sync.Once
 
@@ -174,16 +174,15 @@ func consumerTagSetter(consumerTag *string, deliveries <-chan amqp.Delivery) <-c
 	return proxy
 }
 
-// ignoreAck sets ackIgnorer as amqp.Acknowledger to all deliveries.
-// Useful to avoid calls when autoAck is set.
-func ignoreAck(deliveries <-chan amqp.Delivery) <-chan amqp.Delivery {
+// acknowledgerProxy sets amqp.Acknowledger to all deliveries.
+func acknowledgerProxy(acker amqp.Acknowledger, deliveries <-chan amqp.Delivery) <-chan amqp.Delivery {
 	proxy := make(chan amqp.Delivery)
 
 	go func() {
 		defer close(proxy)
 
 		for d := range deliveries {
-			d.Acknowledger = ackIgnorer{}
+			d.Acknowledger = acker
 			proxy <- d
 		}
 	}()
@@ -192,6 +191,7 @@ func ignoreAck(deliveries <-chan amqp.Delivery) <-chan amqp.Delivery {
 }
 
 // ackIgnorer is amqp.Acknowledger which ignores acknowledge calls.
+// Useful to avoid calls when autoAck is set.
 type ackIgnorer struct{}
 
 func (a ackIgnorer) Ack(tag uint64, multiple bool) error {
