@@ -7,14 +7,14 @@ import (
 	"github.com/cenkalti/backoff/v4"
 	amqp "github.com/rabbitmq/amqp091-go"
 
-	channel2 "github.com/heureka/gorabbit/channel"
+	"github.com/heureka/gorabbit/channel"
 )
 
 // Consumer is Consumer for RabbiMQ.
 // Will automatically recreate channel on channel errors.
 // Reconnection is done with exponential backoff.
 type Consumer struct {
-	channel       *channel2.Reconnector
+	channel       *channel.Reconnector
 	queueName     string
 	rejectRequeue bool
 	consumeCfg    consumeCfg
@@ -53,13 +53,12 @@ func NewConsumer(conn *amqp.Connection, queue string, ops ...ConsumerOption) (*C
 	for _, op := range ops {
 		op(&cfg)
 	}
-	ch, err := channel2.New(
+	ch, err := channel.New(
 		conn,
-		channel2.WithBackoff(cfg.backoff),
-		channel2.WithReconnectionCallback(
-			func(ch *amqp.Channel) error {
-				return ch.Qos(cfg.qos.prefetchCount, cfg.qos.prefetchSize, cfg.qos.global)
-			}),
+		append(
+			cfg.channelOps,
+			channel.WithReconnectionCallback(newReconnCallback(cfg.qos)),
+		)...,
 	)
 
 	if err != nil {
@@ -77,6 +76,12 @@ func NewConsumer(conn *amqp.Connection, queue string, ops ...ConsumerOption) (*C
 		consumeCfg:    cfg.consume,
 		done:          nil,
 	}, nil
+}
+
+func newReconnCallback(qos channelQOS) func(*amqp.Channel) error {
+	return func(ch *amqp.Channel) error {
+		return ch.Qos(qos.prefetchCount, qos.prefetchSize, qos.global)
+	}
 }
 
 // consumeCfg configuration.
