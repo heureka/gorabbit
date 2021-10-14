@@ -57,8 +57,6 @@ func (r *Reconnector) PublishReconn(exchange, key string, mandatory, immediate b
 
 }
 
-// TODO: test by sending to not existing exchange - should generate error and close channel
-
 // ConsumeReconn consumes with reconnection of the channel. Provides constant flow of the deliveries.
 // On graceful closing of the channel, will deliver all remaining deliveries and exit.
 func (r *Reconnector) ConsumeReconn(
@@ -78,7 +76,6 @@ func (r *Reconnector) ConsumeReconn(
 					r.notifyError(fmt.Errorf("reconnect: %w", err))
 					return
 				}
-
 			}
 
 			// The chan provided will be closed when the Channel is closed and on a
@@ -95,13 +92,16 @@ func (r *Reconnector) ConsumeReconn(
 				deliveries <- d
 			}
 
-			// on graceful close no error will be sent
-			amqpErr := <-channelClosedCh
-			if amqpErr == nil {
+			select {
+			case amqpErr := <-channelClosedCh:
+				if amqpErr == nil { // on graceful close no error will be sent
+					return
+				}
+
+				r.notifyError(fmt.Errorf("channel closed: %w", amqpErr))
+			default: // if no channelClosed notification received, that means delivering was closed by user
 				return
 			}
-
-			r.notifyError(fmt.Errorf("channel closed: %w", amqpErr))
 		}
 	}()
 
