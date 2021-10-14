@@ -120,7 +120,7 @@ func (r *Reconnector) reconnect() error {
 
 		for _, fn := range r.onReconnect {
 			if err := fn(r.Channel); err != nil {
-				return fmt.Errorf("on reconnet callback: %w", err)
+				return fmt.Errorf("on reconnect callback: %w", err)
 			}
 		}
 
@@ -129,11 +129,7 @@ func (r *Reconnector) reconnect() error {
 		return nil
 	}
 
-	if err := backoff.Retry(operation, r.backoff); err != nil {
-		return err
-	}
-
-	return nil
+	return backoff.Retry(operation, r.backoff)
 }
 
 func (r *Reconnector) notifyError(err error) {
