@@ -46,6 +46,7 @@ type Option func(r *Reconnector)
 
 // PublishReconn checks if channel is closed and reconnects if needed.
 // Useful to reliably publish events even after channel errors (which closes channel).
+//nolint:gocritic // interface should be the same as Publish
 func (r *Reconnector) PublishReconn(exchange, key string, mandatory, immediate bool, msg amqp.Publishing) error {
 	if r.Channel.IsClosed() {
 		if err := r.reconnect(); err != nil {
@@ -54,7 +55,6 @@ func (r *Reconnector) PublishReconn(exchange, key string, mandatory, immediate b
 	}
 
 	return r.Channel.Publish(exchange, key, mandatory, immediate, msg)
-
 }
 
 // ConsumeReconn consumes with reconnection of the channel. Provides constant flow of the deliveries.
