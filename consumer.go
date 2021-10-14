@@ -3,6 +3,7 @@ package rabbit
 import (
 	"context"
 	"fmt"
+	"sync"
 
 	"github.com/cenkalti/backoff/v4"
 	amqp "github.com/rabbitmq/amqp091-go"
@@ -156,15 +157,15 @@ func (c *Consumer) Stop() error {
 // consumerTagSetter sets consumerTag from deliveries.
 func consumerTagSetter(consumerTag *string, deliveries <-chan amqp.Delivery) <-chan amqp.Delivery {
 	proxy := make(chan amqp.Delivery)
+	var once sync.Once
 
 	go func() {
 		defer close(proxy)
 
-		isSet := *consumerTag != ""
 		for d := range deliveries {
-			if !isSet { // if consumerTag wasn't set, set consumerTag to generated one
+			once.Do(func() {
 				*consumerTag = d.ConsumerTag
-			}
+			})
 
 			proxy <- d
 		}

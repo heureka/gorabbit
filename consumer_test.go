@@ -17,36 +17,21 @@ func TestUnitConsumerTagSetter(t *testing.T) {
 		},
 	}
 
-	tests := map[string]struct {
-		consumerTag     string
-		wantConsumerTag string
-	}{
-		"preset": {
-			consumerTag:     "some-consumer",
-			wantConsumerTag: "some-consumer",
-		},
-		"not set": {
-			consumerTag:     "",
-			wantConsumerTag: "other-consumer",
-		},
+	wantConsumerTag := "other-consumer"
+	consumerTag := ""
+
+	deliveries := make(chan amqp.Delivery)
+	go func() {
+		defer close(deliveries)
+
+		for _, m := range messages {
+			deliveries <- m
+		}
+	}()
+
+	// read all values
+	for range consumerTagProxy(&consumerTag, deliveries) {
 	}
 
-	for name, tt := range tests {
-		t.Run(name, func(t *testing.T) {
-			deliveries := make(chan amqp.Delivery)
-			go func() {
-				defer close(deliveries)
-
-				for _, m := range messages {
-					deliveries <- m
-				}
-			}()
-
-			// read all values
-			for range consumerTagSetter(&tt.consumerTag, deliveries) {
-			}
-
-			assert.Equal(t, tt.wantConsumerTag, tt.consumerTag, "should set correct consumer tag")
-		})
-	}
+	assert.Equal(t, wantConsumerTag, consumerTag, "should set correct consumer tag")
 }
