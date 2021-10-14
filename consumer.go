@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/cenkalti/backoff/v4"
 	amqp "github.com/rabbitmq/amqp091-go"
 
 	"github.com/heureka/gorabbit/channel"
@@ -24,9 +23,9 @@ type Consumer struct {
 }
 
 type config struct {
-	consume consumeCfg
-	backoff backoff.BackOff
-	qos     channelQOS
+	consume    consumeCfg
+	qos        channelQOS
+	channelOps []channel.Option
 }
 
 // NewConsumer creates new RabbitMQ Consumer.
@@ -43,12 +42,12 @@ func NewConsumer(conn *amqp.Connection, queue string, ops ...ConsumerOption) (*C
 			noWait:    false,
 			args:      map[string]interface{}{},
 		},
-		backoff: backoff.NewExponentialBackOff(),
 		qos: channelQOS{
 			prefetchCount: 1,
 			prefetchSize:  0,
 			global:        false,
 		},
+		channelOps: []channel.Option{},
 	}
 
 	for _, op := range ops {

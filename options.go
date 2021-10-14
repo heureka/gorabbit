@@ -1,7 +1,7 @@
 package rabbit
 
 import (
-	"github.com/cenkalti/backoff/v4"
+	"github.com/heureka/gorabbit/channel"
 )
 
 // ConsumerOption allows to configure RabbitMQ Consumer.
@@ -17,10 +17,9 @@ func WithChannelQOS(prefetchCount, prefetchSize int, global bool) ConsumerOption
 	}
 }
 
-// WithReconnectBackoff sets backoff for channel reconnection retrying.
-func WithReconnectBackoff(bo backoff.BackOff) ConsumerOption {
+func WithChannel(ops ...channel.Option) ConsumerOption {
 	return func(c *config) {
-		c.backoff = bo
+		c.channelOps = append(c.channelOps, ops...)
 	}
 }
 
