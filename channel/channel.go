@@ -45,7 +45,7 @@ func New(conn *amqp.Connection, ops ...Option) (*Reconnector, error) {
 type Option func(r *Reconnector)
 
 // PublishReconn checks if channel is closed and reconnects if needed.
-// Useful to reliably publish events even after channel errors.
+// Useful to reliably publish events even after channel errors (which closes channel).
 func (r *Reconnector) PublishReconn(exchange, key string, mandatory, immediate bool, msg amqp.Publishing) error {
 	if r.Channel.IsClosed() {
 		if err := r.reconnect(); err != nil {
