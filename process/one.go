@@ -1,4 +1,4 @@
-package transaction
+package process
 
 import (
 	"context"
@@ -13,9 +13,9 @@ type One struct {
 	rejectRequeue bool
 }
 
-// NewOne creates new One consumer.
+// ByOne creates new One consumer.
 // It passes message into transaction and automatically ack/reject based on transaction's returned error.
-func NewOne(tx Transaction, rejectRequeue bool, mws ...Middleware) *One {
+func ByOne(tx Transaction, rejectRequeue bool, mws ...Middleware) *One {
 	return &One{
 		handler:       txWithMiddlewares(tx, mws...),
 		rejectRequeue: rejectRequeue,

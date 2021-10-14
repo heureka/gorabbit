@@ -1,4 +1,4 @@
-package transaction
+package process
 
 import (
 	"context"
@@ -72,7 +72,7 @@ func TestUnitBatchInBatches(t *testing.T) {
 	tx := func(ctx context.Context, msgs [][]byte) []error {
 		return make([]error, len(msgs))
 	}
-	b := NewBatch(2, time.Second, tx, false)
+	b := InBatches(2, time.Second, tx, false)
 
 	deliveriesCh := make(chan amqp.Delivery)
 	go func() {
@@ -85,7 +85,7 @@ func TestUnitBatchInBatches(t *testing.T) {
 
 	batches := b.inBatches(deliveriesCh)
 
-	var got [][]amqp.Delivery
+	got := make([][]amqp.Delivery, 0, 2)
 	for b := range batches {
 		got = append(got, b)
 	}
@@ -107,7 +107,7 @@ func TestUnitBatchInBatches_Timeout(t *testing.T) {
 	tx := func(ctx context.Context, msgs [][]byte) []error {
 		return make([]error, len(msgs))
 	}
-	b := NewBatch(2, time.Millisecond, tx, false)
+	b := InBatches(2, time.Millisecond, tx, false)
 
 	deliveriesCh := make(chan amqp.Delivery)
 	defer close(deliveriesCh)
@@ -127,7 +127,7 @@ func TestUnitBatchAck(t *testing.T) {
 		return make([]error, len(msgs))
 	}
 
-	b := NewBatch(2, time.Millisecond, tx, false)
+	b := InBatches(2, time.Millisecond, tx, false)
 
 	tests := map[string]struct {
 		status       []error
@@ -273,7 +273,7 @@ func TestUnitBatchConsume(t *testing.T) {
 				}
 			}()
 
-			b := NewBatch(2, time.Second, tx, false)
+			b := InBatches(2, time.Second, tx, false)
 			err := b.Consume(context.TODO(), deliveriesCh)
 			if tt.wantErr != nil {
 				assert.True(t, errors.Is(err, tt.wantErr), "should return correct error")
@@ -281,7 +281,6 @@ func TestUnitBatchConsume(t *testing.T) {
 				assert.NoError(t, err, "should not return error")
 				assert.Equal(t, wantReceived, received)
 			}
-
 		})
 	}
 }
@@ -300,17 +299,17 @@ func newAckRecorder(retError error) *ackRecorder {
 	}
 }
 
-func (a *ackRecorder) Ack(tag uint64, multiple bool) error {
+func (a *ackRecorder) Ack(tag uint64, _ bool) error {
 	a.acked = append(a.acked, tag)
 	return a.retError
 }
 
-func (a *ackRecorder) Nack(tag uint64, multiple bool, requeue bool) error {
+func (a *ackRecorder) Nack(tag uint64, _, _ bool) error {
 	a.nacked = append(a.nacked, tag)
 	return a.retError
 }
 
-func (a *ackRecorder) Reject(tag uint64, requeue bool) error {
+func (a *ackRecorder) Reject(tag uint64, _ bool) error {
 	a.rejected = append(a.rejected, tag)
 	return a.retError
 }

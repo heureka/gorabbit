@@ -1,4 +1,4 @@
-package transaction
+package process
 
 import (
 	"errors"
@@ -75,7 +75,7 @@ func (m *mockAcknowledger) Ack(tag uint64, multiple bool) error {
 	return args.Error(0)
 }
 
-func (m *mockAcknowledger) Nack(tag uint64, multiple bool, requeue bool) error {
+func (m *mockAcknowledger) Nack(tag uint64, multiple, requeue bool) error {
 	args := m.Called(tag, multiple, requeue)
 	return args.Error(0)
 }

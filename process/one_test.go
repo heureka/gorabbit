@@ -1,4 +1,4 @@
-package transaction
+package process
 
 import (
 	"context"
@@ -110,7 +110,7 @@ func TestUnitOneConsume(t *testing.T) {
 				return tt.txErr
 			}
 
-			one := NewOne(tx, false)
+			one := ByOne(tx, false)
 			err := one.Consume(context.TODO(), deliveriesCh)
 			if tt.wantErr != nil {
 				assert.True(t, errors.Is(err, tt.wantErr), "should return correct error")

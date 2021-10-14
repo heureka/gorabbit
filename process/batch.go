@@ -1,4 +1,4 @@
-package transaction
+package process
 
 import (
 	"context"
@@ -16,8 +16,8 @@ type Batch struct {
 	rejectRequeue bool
 }
 
-// NewBatch creates new batch consumer. One batch is `amount` of messages or until timeout, whichever comes first.
-func NewBatch(amount int, timeout time.Duration, tx BatchTransaction, rejectRequeue bool, mws ...BatchMiddleware) *Batch {
+// InBatches creates new batch consumer. One batch is `amount` of messages or until timeout, whichever comes first.
+func InBatches(amount int, timeout time.Duration, tx BatchTransaction, rejectRequeue bool, mws ...BatchMiddleware) *Batch {
 	return &Batch{
 		amount:        amount,
 		timeout:       timeout,
@@ -48,9 +48,9 @@ func (c *Batch) Consume(ctx context.Context, deliveries <-chan amqp.Delivery) er
 }
 
 func (c *Batch) ack(batch []amqp.Delivery, status []error) error {
-	for i, d := range batch {
+	for i := range batch {
 		isFailed := status[i] != nil
-		if err := ack(d.Acknowledger, d.DeliveryTag, isFailed, c.rejectRequeue); err != nil {
+		if err := ack(batch[i].Acknowledger, batch[i].DeliveryTag, isFailed, c.rejectRequeue); err != nil {
 			return err
 		}
 	}
@@ -95,8 +95,8 @@ func (c *Batch) inBatches(deliveries <-chan amqp.Delivery) <-chan []amqp.Deliver
 func batchTxWithMiddlewares(tx BatchTransaction, mws ...BatchMiddleware) BatchDeliveryHandler {
 	wrapped := func(ctx context.Context, ds []amqp.Delivery) []error {
 		bodies := make([][]byte, 0, len(ds))
-		for _, d := range ds {
-			bodies = append(bodies, d.Body)
+		for i := range ds {
+			bodies = append(bodies, ds[i].Body)
 		}
 
 		return tx(ctx, bodies)
