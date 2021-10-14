@@ -1,0 +1,4 @@
+github.com/cenkalti/backoff/v4 v4.1.1 h1:G2HAfAmvm/GcKan2oOQpBXOd2tT2G57ZnZGWa1PxPBQ=
+github.com/cenkalti/backoff/v4 v4.1.1/go.mod h1:scbssz8iZGpm3xbr14ovlUdkxfGXNInqkPWOWmG2CLw=
+github.com/rabbitmq/amqp091-go v0.0.0-20210921101955-bb8191b6c914 h1:dmsMbNQSCUQmBIogu+S0sF24THBJK76kQwMoZjoIpXw=
+github.com/rabbitmq/amqp091-go v0.0.0-20210921101955-bb8191b6c914/go.mod h1:ogQDLSOACsLPsIq0NpbtiifNZi2YOz0VTJ0kHRghqbM=
