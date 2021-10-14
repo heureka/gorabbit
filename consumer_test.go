@@ -30,6 +30,7 @@ func TestUnitConsumerTagSetter(t *testing.T) {
 	}()
 
 	// read all values
+	//nolint:revive // need to read all values
 	for range consumerTagProxy(&consumerTag, deliveries) {
 	}
 
