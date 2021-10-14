@@ -2,29 +2,74 @@ package rabbit
 
 import (
 	"github.com/cenkalti/backoff/v4"
-	amqp "github.com/rabbitmq/amqp091-go"
 )
 
-// WithNotifyErrors registers a listener for any reconnection problems.
-// Will send errors appeared during reconnection process to provided channel.
-func WithNotifyErrors(ch chan<- error) Option {
-	return func(r *Reconnector) {
-		r.reconnectErrors = ch
+// ConsumerOption allows to configure RabbitMQ Consumer.
+type ConsumerOption func(c *config)
+
+// WithChannelQOS sets channel's Quality of Service.
+// Please refer to https://www.rabbitmq.com/confirms.html#channel-qos-prefetch.
+func WithChannelQOS(prefetchCount, prefetchSize int, global bool) ConsumerOption {
+	return func(c *config) {
+		c.qos.prefetchCount = prefetchCount
+		c.qos.prefetchSize = prefetchSize
+		c.qos.global = global
 	}
 }
 
-// WithReconnectionCallback sets callback function on reconnection.
-// Given function will receive a newly created channel.
-// Could be used to set up QoS or listeners for various evens (NotifyClose, NotifyFlow, etc.) after channel recreation.
-func WithReconnectionCallback(fn func(channel *amqp.Channel) error) Option {
-	return func(r *Reconnector) {
-		r.onReconnect = fn
+// WithReconnectBackoff sets backoff for channel reconnection retrying.
+func WithReconnectBackoff(bo backoff.BackOff) ConsumerOption {
+	return func(c *config) {
+		c.backoff = bo
 	}
 }
 
-// WithBackoff sets backoff function for reconnection.
-func WithBackoff(bo backoff.BackOff) Option {
-	return func(r *Reconnector) {
-		r.backoff = bo
+// ConsumeOption allows to configure RabbitMQ consume options.
+type ConsumeOption func(c *consumeCfg)
+
+// WithConsume sets up consuming configuration.
+// Please refer to https://pkg.go.dev/github.com/rabbitmq/amqp091-go?utm_source=godoc#Channel.Consume.
+func WithConsume(ops ...ConsumeOption) ConsumerOption {
+	return func(c *config) {
+		for _, op := range ops {
+			op(&c.consume)
+		}
+	}
+}
+
+// WithConsumerTag sets consumer consumerTag. Otherwise library will generate a unique identity.
+func WithConsumerTag(tag string) ConsumeOption {
+	return func(c *consumeCfg) {
+		c.tag = tag
+	}
+}
+
+// WithConsumeAutoAck sets the server to acknowledge deliveries to this consumer
+// prior to writing the delivery to the network.
+func WithConsumeAutoAck() ConsumeOption {
+	return func(c *consumeCfg) {
+		c.autoAck = true
+	}
+}
+
+// WithConsumeExclusive sets the server to ensure that this is the sole consumer from this queue.
+func WithConsumeExclusive() ConsumeOption {
+	return func(c *consumeCfg) {
+		c.exclusive = true
+	}
+}
+
+// WithConsumeNoWait sets the server to not wait to confirm the request
+// and immediately begin deliveries.
+func WithConsumeNoWait() ConsumeOption {
+	return func(c *consumeCfg) {
+		c.noWait = true
+	}
+}
+
+// WithConsumeArgs sets additional arguments for consuming.
+func WithConsumeArgs(args map[string]interface{}) ConsumeOption {
+	return func(c *consumeCfg) {
+		c.args = args
 	}
 }
