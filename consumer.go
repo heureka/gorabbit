@@ -193,14 +193,14 @@ func acknowledgerProxy(acker amqp.Acknowledger, deliveries <-chan amqp.Delivery)
 // Useful to avoid calls when autoAck is set.
 type ackIgnorer struct{}
 
-func (a ackIgnorer) Ack(tag uint64, multiple bool) error {
+func (a ackIgnorer) Ack(uint64, bool) error {
 	return nil
 }
 
-func (a ackIgnorer) Nack(tag uint64, multiple bool, requeue bool) error {
+func (a ackIgnorer) Nack(uint64, bool, bool) error {
 	return nil
 }
 
-func (a ackIgnorer) Reject(tag uint64, requeue bool) error {
+func (a ackIgnorer) Reject(uint64, bool) error {
 	return nil
 }
