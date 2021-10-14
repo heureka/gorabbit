@@ -110,41 +110,43 @@ type Transactor interface {
 // If autoAck is not set, will Reject messages if Transaction returns error, otherwise Ack them.
 // Call Stop to stop consuming.
 // Returns channel with reading errors, channel MUST be read.
-func (r *Consumer) Start(ctx context.Context, consumer Transactor) error {
-	deliveries := r.channel.ConsumeReconn(
-		r.queueName,
-		r.consumeCfg.tag,
-		r.consumeCfg.autoAck,
-		r.consumeCfg.exclusive,
+func (c *Consumer) Start(ctx context.Context, consumer Transactor) error {
+	deliveries := c.channel.ConsumeReconn(
+		c.queueName,
+		c.consumeCfg.tag,
+		c.consumeCfg.autoAck,
+		c.consumeCfg.exclusive,
 		false, // noLocal is not supported by RabbitMQ
-		r.consumeCfg.noWait,
-		r.consumeCfg.args,
+		c.consumeCfg.noWait,
+		c.consumeCfg.args,
 	)
 
-	deliveries = consumerTagSetter(&r.consumeCfg.tag, deliveries)
-	if r.consumeCfg.autoAck {
-		deliveries = ignoreAck(deliveries)
+	if c.consumeCfg.tag == "" {
+		deliveries = consumerTagProxy(&c.consumeCfg.tag, deliveries)
+	}
+	if c.consumeCfg.autoAck {
+		deliveries = acknowledgerProxy(ackIgnorer{}, deliveries)
 	}
 
-	r.done = make(chan struct{})
-	defer close(r.done)
+	c.done = make(chan struct{})
+	defer close(c.done)
 
 	return consumer.Consume(ctx, deliveries)
 }
 
 // Stop consuming, wait for all in-flight messages to be processed and close a channel.
-func (r *Consumer) Stop() error {
-	// if noWait == true - potentially could drop deliveries in-flight
-	if err := r.channel.Cancel(r.consumeCfg.tag, false); err != nil {
+func (c *Consumer) Stop() error {
+	// with noWait == true potentially could drop deliveries in-flight
+	if err := c.channel.Cancel(c.consumeCfg.tag, false); err != nil {
 		return fmt.Errorf("cancel consuming: %w", err)
 	}
 
 	// wait for consuming to stop
-	if r.done != nil {
-		<-r.done
+	if c.done != nil {
+		<-c.done
 	}
 
-	if err := r.channel.Close(); err != nil {
+	if err := c.channel.Close(); err != nil {
 		return fmt.Errorf("close channel: %w", err)
 	}
 
