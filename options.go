@@ -7,7 +7,7 @@ import (
 // ConsumerOption allows to configure RabbitMQ Consumer.
 type ConsumerOption func(c *config)
 
-// WithChannelQOS sets channel's Quality of Service.
+// WithChannelQOS sets channel's Quality of Service. Will reset QOS on reconnection.
 // Please refer to https://www.rabbitmq.com/confirms.html#channel-qos-prefetch.
 func WithChannelQOS(prefetchCount, prefetchSize int, global bool) ConsumerOption {
 	return func(c *config) {
@@ -17,7 +17,8 @@ func WithChannelQOS(prefetchCount, prefetchSize int, global bool) ConsumerOption
 	}
 }
 
-func WithChannel(ops ...channel.Option) ConsumerOption {
+// WithReconnector configures channel.Reconnector used in consumer.
+func WithReconnector(ops ...channel.Option) ConsumerOption {
 	return func(c *config) {
 		c.channelOps = append(c.channelOps, ops...)
 	}
