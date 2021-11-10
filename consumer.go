@@ -57,10 +57,9 @@ func NewConsumer(conn *amqp.Connection, queue string, ops ...ConsumerOption) (*C
 		conn,
 		append(
 			cfg.channelOps,
-			channel.WithReconnectionCallback(newReconnCallback(cfg.qos)),
+			channel.WithReconnectionCallback(newReconnCallbackQOS(cfg.qos)),
 		)...,
 	)
-
 	if err != nil {
 		return nil, fmt.Errorf("channel creation: %w", err)
 	}
@@ -78,7 +77,8 @@ func NewConsumer(conn *amqp.Connection, queue string, ops ...ConsumerOption) (*C
 	}, nil
 }
 
-func newReconnCallback(qos channelQOS) func(*amqp.Channel) error {
+// newReconnCallbackQOS creates new reconnection callback which resets channel's QOS.
+func newReconnCallbackQOS(qos channelQOS) func(*amqp.Channel) error {
 	return func(ch *amqp.Channel) error {
 		return ch.Qos(qos.prefetchCount, qos.prefetchSize, qos.global)
 	}
