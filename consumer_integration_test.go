@@ -2,115 +2,18 @@ package rabbit_test
 
 import (
 	"context"
-	"fmt"
-	"os"
 	"testing"
-	"time"
 
 	amqp "github.com/rabbitmq/amqp091-go"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 
 	rabbit "github.com/heureka/gorabbit"
+	"github.com/heureka/gorabbit/rabbittest"
 )
 
 type ConsumerTestSuite struct {
-	suite.Suite
-	conn     *amqp.Connection
-	channel  *amqp.Channel
-	exchange string
-	queue    string
-	key      string
-}
-
-func (s *ConsumerTestSuite) SetupSuite() {
-	rmqURL := os.Getenv("RABBITMQ_URL")
-	if rmqURL == "" {
-		s.FailNow("please provide rabbitMQ URL via RABBITMQ_URL environment variable")
-	}
-
-	var err error
-	var connection *amqp.Connection
-	for i := 0; i < 5; i++ {
-		connection, err = amqp.Dial(rmqURL)
-		if err != nil {
-			time.Sleep(time.Second)
-		} else {
-			break
-		}
-	}
-	if err != nil {
-		s.FailNow("can't open connection", "%q: %s", rmqURL, err)
-	}
-
-	s.conn = connection
-}
-
-func (s *ConsumerTestSuite) TearDownSuite() {
-	if err := s.conn.Close(); err != nil {
-		s.Fail("close connection", err)
-	}
-}
-
-func (s *ConsumerTestSuite) SetupTest() {
-	ch, err := s.conn.Channel()
-	if err != nil {
-		s.FailNow("create channel", err)
-	}
-
-	s.channel = ch
-
-	s.exchange = "my-exchange"
-
-	if err := ch.ExchangeDeclare(
-		s.exchange,
-		"topic",
-		false,
-		false,
-		false,
-		false,
-		nil,
-	); err != nil {
-		s.FailNow("declare exchange", err)
-	}
-
-	s.queue = "my-queue"
-
-	if _, err := ch.QueueDeclare(
-		s.queue,
-		false,
-		false,
-		false,
-		false,
-		nil,
-	); err != nil {
-		s.FailNow("declare queue", err)
-	}
-
-	s.key = "my-key"
-	if err := ch.QueueBind(
-		s.queue,
-		s.key,
-		s.exchange,
-		false,
-		nil,
-	); err != nil {
-		s.FailNow("bind queue", err)
-	}
-}
-
-func (s *ConsumerTestSuite) TearDownTest() {
-	if err := s.channel.ExchangeDelete(s.exchange, false, false); err != nil {
-		s.Fail("delete exchange", s.exchange, err)
-	}
-
-	if _, err := s.channel.QueueDelete(s.queue, false, false, false); err != nil {
-		s.Fail("delete queue", s.exchange, err)
-	}
-
-	if err := s.channel.Close(); err != nil {
-		s.Fail("close channel", err)
-	}
+	rabbittest.TopologySuite
 }
 
 func (s *ConsumerTestSuite) TestConsume() {
@@ -134,43 +37,13 @@ func (s *ConsumerTestSuite) TestConsume() {
 				[]byte("3"),
 			},
 		},
-		// "consume err": {
-		// 	options:    nil,
-		// 	consumeErr: assert.AnError,
-		// 	messages: [][]byte{
-		// 		[]byte("1"),
-		// 		[]byte("2"),
-		// 		[]byte("3"),
-		// 	},
-		// 	wantReceived: [][]byte{
-		// 		[]byte("1"),
-		// 		[]byte("2"),
-		// 		[]byte("3"),
-		// 	},
-		// 	wantErr: assert.AnError,
-		// },
-		// "with auto ACK": {
-		// 	options: []rabbit.ConsumerOption{
-		// 		rabbit.WithConsume(rabbit.WithConsumeAutoAck()),
-		// 	},
-		// 	messages: [][]byte{
-		// 		[]byte("1"),
-		// 		[]byte("2"),
-		// 		[]byte("3"),
-		// 	},
-		// 	wantReceived: [][]byte{
-		// 		[]byte("1"),
-		// 		[]byte("2"),
-		// 		[]byte("3"),
-		// 	},
-		// },
 	}
 
 	for name, tt := range tests {
 		s.Run(name, func() {
 			txreader, err := rabbit.NewConsumer(
-				s.conn,
-				s.queue,
+				s.Connection,
+				s.Queue,
 				tt.options...,
 			)
 			if err != nil {
@@ -185,33 +58,26 @@ func (s *ConsumerTestSuite) TestConsume() {
 
 			// done := make(chan struct{})
 			go func() {
-				// defer close(done)
+				defer func() {
+					if err := txreader.Stop(); err != nil {
+						s.Fail("stop txreader", err)
+					}
+				}()
 
 				if err = txreader.Start(context.Background(), consumer); err != nil {
 					s.Fail("start consuming messages", err)
 				}
 			}()
 
+			// publish all messages
 			for _, m := range tt.messages {
-				if err := s.channel.Publish(
-					s.exchange,
-					s.key,
-					false,
-					false,
-					amqp.Publishing{
-						Body: m,
-					}); err != nil {
-					s.Fail("publish message", err)
-				}
+				s.publish(m)
 			}
 
 			// wait to consume all messages
 			var received [][]byte
 			for i := 0; i < len(tt.wantReceived); i++ {
 				received = append(received, <-receiveCh)
-			}
-			if err := txreader.Stop(); err != nil {
-				s.Fail("stop txreader", err)
 			}
 
 			s.Assert().ElementsMatch(tt.wantReceived, received, "should consume expected messages")
@@ -221,8 +87,8 @@ func (s *ConsumerTestSuite) TestConsume() {
 
 func (s *ConsumerTestSuite) TestImmediatelyStop() {
 	rmq, err := rabbit.NewConsumer(
-		s.conn,
-		s.queue,
+		s.Connection,
+		s.Queue,
 	)
 	if err != nil {
 		s.FailNow("create rmq", err)
@@ -230,6 +96,19 @@ func (s *ConsumerTestSuite) TestImmediatelyStop() {
 
 	err = rmq.Stop()
 	s.Assert().NoError(err, "should not return error")
+}
+
+func (s *ConsumerTestSuite) publish(body []byte) {
+	if err := s.Channel.Publish(
+		s.Exchange,
+		s.Key,
+		false,
+		false,
+		amqp.Publishing{
+			Body: body,
+		}); err != nil {
+		s.Fail("publish message", err)
+	}
 }
 
 func TestRabbitMQIntegration(t *testing.T) {
@@ -252,7 +131,6 @@ func (m *mockEchoConsumer) Consume(ctx context.Context, deliveries <-chan amqp.D
 
 	for d := range deliveries {
 		m.received <- d.Body
-		fmt.Println(d.Body)
 		if err := d.Ack(false); err != nil {
 			return err
 		}
