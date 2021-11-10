@@ -58,7 +58,7 @@ func (s *TestSuite) TestReconnectPublishing() {
 	}
 }
 
-// FIXME: can't cause exception, it is blocked on receiving closing notification
+// FIXME: can't cause exception, it is blocked on receiving closing notification.
 func (s *TestSuite) TestReconnectConsume() {
 	consumerName := "test-consumer"
 
@@ -70,15 +70,6 @@ func (s *TestSuite) TestReconnectConsume() {
 	s.publish(queue.Name, "1")
 
 	deliveries := s.channel.ConsumeReconn(queue.Name, consumerName, true, false, false, false, nil)
-
-	// done := make(chan struct{})
-	// var dels []amqp.Delivery
-	// go func() {
-	// 	defer close(done)
-	// 	for d := range deliveries {
-	// 		dels = append(dels, d)
-	// 	}
-	// }()
 
 	d := <-deliveries
 	s.Equal([]byte("1"), d.Body, "should receive first message")
@@ -93,14 +84,7 @@ func (s *TestSuite) TestReconnectConsume() {
 	if err := s.channel.Cancel(consumerName, false); err != nil {
 		s.FailNow("cancel delivering", err)
 	}
-	// go func() {
-	// 	_ = s.channel.Close()
-	//
-	// }()
-	// <-done
 
-	// d = <-deliveries
-	// s.Assert().Equal([]byte("2"), d.Body, "should receive second message")
 }
 
 func (s *TestSuite) TestGracefulShutdown() {
