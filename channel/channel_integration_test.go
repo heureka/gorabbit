@@ -128,6 +128,7 @@ func (s *TestSuite) TestGracefulShutdown() {
 	done := make(chan struct{})
 	go func() {
 		defer close(done)
+		//nolint:revive // need to read all values
 		for range deliveries {
 		}
 	}()
