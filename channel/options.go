@@ -5,14 +5,6 @@ import (
 	amqp "github.com/rabbitmq/amqp091-go"
 )
 
-// WithNotifyErrors registers a listener for any reconnection problems.
-// Will send errors appeared during reconnection process to provided channel.
-func WithNotifyErrors(ch chan<- error) Option {
-	return func(r *Reconnector) {
-		r.reconnectErrors = append(r.reconnectErrors, ch)
-	}
-}
-
 // WithReconnectionCallback sets callback function on reconnection.
 // Given function will receive a newly created channel.
 // Could be used to set up QoS or listeners for various evens (NotifyClose, NotifyFlow, etc.) after channel recreation.

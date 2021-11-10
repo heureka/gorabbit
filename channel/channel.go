@@ -44,6 +44,17 @@ func New(conn *amqp.Connection, ops ...Option) (*Reconnector, error) {
 // Option to configure Reconnector.
 type Option func(r *Reconnector)
 
+// NotifyReconnect registers a listener for any reconnection problems.
+// Will send errors appeared during reconnection process to provided channel.
+func (r *Reconnector) NotifyReconnect(c chan error) <-chan error {
+	r.mux.Lock()
+	defer r.mux.Unlock()
+
+	r.reconnectErrors = append(r.reconnectErrors, c)
+
+	return c
+}
+
 // PublishReconn checks if channel is closed and reconnects if needed.
 // Useful to reliably publish events even after channel errors (which closes channel).
 //nolint:gocritic // interface should be the same as Publish
