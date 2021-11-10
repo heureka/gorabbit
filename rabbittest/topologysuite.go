@@ -10,7 +10,7 @@ type TopologySuite struct {
 }
 
 func (s *TopologySuite) SetupTest() {
-	s.ChannelSuite.SetupSuite()
+	s.ChannelSuite.SetupTest()
 
 	s.Exchange = "my-Exchange"
 	if err := s.Channel.ExchangeDeclare(
