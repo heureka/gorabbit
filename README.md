@@ -1,5 +1,7 @@
 # GoRabbit
 
+**This package is WIP**
+
 TODO: add labels
 
 GoRabbit provides additional capabilities for official RabbitMQ Go client [amqp091-go](https://github.com/rabbitmq/amqp091-go).
