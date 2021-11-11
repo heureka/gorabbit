@@ -43,6 +43,8 @@ All consumers have sane defaults, but at the same time fully configurable.
 [One consumer](process/one.go) reads messages one-by-one and passes them to `Transaction`. 
 Will ACK them on success, NACK on error.
 
+Example of usage is in [examples/one](examples/one/main.go).
+
 ### One Middlewares
 
 Easily plug in any middlewares and pass them to `Consumer`, implementing simple API:
@@ -61,6 +63,8 @@ Batch consumer reads batch of messages from a broker and passes them to `BatchTr
 Your code expected to return one-to-one errors for each passed message (`len(messages) == len(errors)`).
 
 Consumer will ACK each of messages on success, NACK on error.
+
+Example of usage is in [examples/batch](examples/batch/main.go).
 
 ### Batch Middlewares
 
