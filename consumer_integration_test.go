@@ -1,4 +1,4 @@
-package rabbit_test
+package gorabbit_test
 
 import (
 	"context"
@@ -8,7 +8,7 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 
-	rabbit "github.com/heureka/gorabbit"
+	"github.com/heureka/gorabbit"
 	"github.com/heureka/gorabbit/rabbittest"
 )
 
@@ -18,7 +18,7 @@ type ConsumerTestSuite struct {
 
 func (s *ConsumerTestSuite) TestConsume() {
 	tests := map[string]struct {
-		options      []rabbit.ConsumerOption
+		options      []gorabbit.ConsumerOption
 		messages     [][]byte
 		consumeErr   error
 		wantReceived [][]byte
@@ -41,7 +41,7 @@ func (s *ConsumerTestSuite) TestConsume() {
 
 	for name, tt := range tests {
 		s.Run(name, func() {
-			txreader, err := rabbit.NewConsumer(
+			txreader, err := gorabbit.NewConsumer(
 				s.Connection,
 				s.Queue,
 				tt.options...,
@@ -86,7 +86,7 @@ func (s *ConsumerTestSuite) TestConsume() {
 }
 
 func (s *ConsumerTestSuite) TestImmediatelyStop() {
-	rmq, err := rabbit.NewConsumer(
+	rmq, err := gorabbit.NewConsumer(
 		s.Connection,
 		s.Queue,
 	)

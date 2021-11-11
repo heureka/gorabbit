@@ -1,4 +1,4 @@
-package rabbit
+package gorabbit
 
 import (
 	"context"
