@@ -2,16 +2,16 @@
 //
 // Usage:
 //
-//  // embedding ChannelSuite
-//  type TestSuite struct {
-//    rabbittest.ChannelSuite
-//  }
+//	// embedding ChannelSuite
+//	type TestSuite struct {
+//	  rabbittest.ChannelSuite
+//	}
 //
-//  func (s *TestSuite) TestMyFunction() {
-//    s.Channel.Publish(...)
-//  }
+//	func (s *TestSuite) TestMyFunction() {
+//	  s.Channel.Publish(...)
+//	}
 //
 // Set up RABBITMQ_URL environment variable and tun tests:
 //
-//   RABBITMQ_URL=amqp://localhost:5672 go test -v  ./...
+//	RABBITMQ_URL=amqp://localhost:5672 go test -v  ./...
 package rabbittest

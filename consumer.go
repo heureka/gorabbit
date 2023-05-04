@@ -111,7 +111,7 @@ type Transactor interface {
 // Call Stop to stop consuming.
 // Returns channel with reading errors, channel MUST be read.
 func (c *Consumer) Start(ctx context.Context, consumer Transactor) error {
-	deliveries := c.channel.ConsumeReconn(
+	deliveries := c.channel.Consume(
 		c.queueName,
 		c.consumeCfg.tag,
 		c.consumeCfg.autoAck,
@@ -129,7 +129,7 @@ func (c *Consumer) Start(ctx context.Context, consumer Transactor) error {
 	}
 
 	c.done = make(chan struct{})
-	defer close(c.done)
+	defer close(c.done) // close when .Consume is unblocked
 
 	return consumer.Consume(ctx, deliveries)
 }
