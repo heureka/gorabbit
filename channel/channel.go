@@ -1,6 +1,7 @@
 package channel
 
 import (
+	"context"
 	"fmt"
 	"sync"
 
@@ -55,17 +56,18 @@ func (r *Reconnector) NotifyReconnect(c chan error) <-chan error {
 	return c
 }
 
-// PublishReconn checks if channel is closed and reconnects if needed.
+// PublishWithContext checks if channel is closed and reconnects if needed.
 // Useful to reliably publish events even after channel errors (which closes channel).
+//
 //nolint:gocritic // interface should be the same as Publish
-func (r *Reconnector) PublishReconn(exchange, key string, mandatory, immediate bool, msg amqp.Publishing) error {
+func (r *Reconnector) PublishWithContext(ctx context.Context, exchange, key string, mandatory, immediate bool, msg amqp.Publishing) error {
 	if r.Channel.IsClosed() {
 		if err := r.reconnect(); err != nil {
 			return fmt.Errorf("reconnect: %w", err)
 		}
 	}
 
-	return r.Channel.Publish(exchange, key, mandatory, immediate, msg)
+	return r.Channel.PublishWithContext(ctx, exchange, key, mandatory, immediate, msg)
 }
 
 // ConsumeReconn consumes with reconnection of the channel. Provides constant flow of the deliveries.

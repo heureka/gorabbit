@@ -3,6 +3,7 @@ package gorabbit_test
 import (
 	"context"
 	"testing"
+	"time"
 
 	amqp "github.com/rabbitmq/amqp091-go"
 	"github.com/stretchr/testify/mock"
@@ -41,6 +42,9 @@ func (s *ConsumerTestSuite) TestConsume() {
 
 	for name, tt := range tests {
 		s.Run(name, func() {
+			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+			defer cancel()
+
 			txreader, err := gorabbit.NewConsumer(
 				s.Connection,
 				s.Queue,
@@ -71,7 +75,7 @@ func (s *ConsumerTestSuite) TestConsume() {
 
 			// publish all messages
 			for _, m := range tt.messages {
-				s.publish(m)
+				s.publish(ctx, m)
 			}
 
 			// wait to consume all messages
@@ -98,8 +102,9 @@ func (s *ConsumerTestSuite) TestImmediatelyStop() {
 	s.Assert().NoError(err, "should not return error")
 }
 
-func (s *ConsumerTestSuite) publish(body []byte) {
-	if err := s.Channel.Publish(
+func (s *ConsumerTestSuite) publish(ctx context.Context, body []byte) {
+	if err := s.Channel.PublishWithContext(
+		ctx,
 		s.Exchange,
 		s.Key,
 		false,
