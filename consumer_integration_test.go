@@ -17,6 +17,7 @@ type ConsumerTestSuite struct {
 	rabbittest.TopologySuite
 }
 
+//nolint:gocognit // complexity is fine for a test
 func (s *ConsumerTestSuite) TestConsume() {
 	tests := map[string]struct {
 		options      []gorabbit.ConsumerOption
@@ -60,15 +61,14 @@ func (s *ConsumerTestSuite) TestConsume() {
 			consumer := newMockEchoConsumer(receiveCh)
 			consumer.On("Consume", mock.Anything, mock.Anything).Return(tt.consumeErr)
 
-			// done := make(chan struct{})
 			go func() {
 				defer func() {
-					if err := txreader.Stop(); err != nil {
+					if err := txreader.Stop(); err != nil { // will wait for consuming to stop
 						s.Fail("stop txreader", err)
 					}
 				}()
 
-				if err = txreader.Start(context.Background(), consumer); err != nil {
+				if err = txreader.Start(ctx, consumer); err != nil { // is blocking
 					s.Fail("start consuming messages", err)
 				}
 			}()

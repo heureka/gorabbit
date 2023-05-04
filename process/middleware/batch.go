@@ -23,7 +23,6 @@ func NewBatchDeliveryLogging(logger *zerolog.Logger) process.BatchMiddleware {
 			}
 
 			return handler(ctx, deliveries)
-
 		}
 	}
 }

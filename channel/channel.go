@@ -70,9 +70,11 @@ func (r *Reconnector) PublishWithContext(ctx context.Context, exchange, key stri
 	return r.Channel.PublishWithContext(ctx, exchange, key, mandatory, immediate, msg)
 }
 
-// ConsumeReconn consumes with reconnection of the channel. Provides constant flow of the deliveries.
+// Consume consumes with reconnection of the channel. Provides constant flow of the deliveries.
 // On graceful closing of the channel, will deliver all remaining deliveries and exit.
-func (r *Reconnector) ConsumeReconn(
+//
+//nolint:gocognit // complex function, will rewrite later
+func (r *Reconnector) Consume(
 	queue, consumer string,
 	autoAck, exclusive, noLocal, noWait bool,
 	args amqp.Table,

@@ -107,7 +107,7 @@ func TestUnitBatchInBatches_Timeout(t *testing.T) {
 	tx := func(ctx context.Context, msgs [][]byte) []error {
 		return make([]error, len(msgs))
 	}
-	b := InBatches(2, time.Millisecond, tx, false)
+	process := InBatches(2, time.Millisecond, tx, false)
 
 	deliveriesCh := make(chan amqp.Delivery)
 	defer close(deliveriesCh)
@@ -116,7 +116,7 @@ func TestUnitBatchInBatches_Timeout(t *testing.T) {
 		deliveriesCh <- del
 	}()
 
-	batches := b.inBatches(deliveriesCh)
+	batches := process.inBatches(deliveriesCh)
 	got := <-batches
 
 	assert.Equal(t, wantBatch, got, "should receive correct batch")
@@ -127,7 +127,7 @@ func TestUnitBatchAck(t *testing.T) {
 		return make([]error, len(msgs))
 	}
 
-	b := InBatches(2, time.Millisecond, tx, false)
+	processor := InBatches(2, time.Millisecond, tx, false)
 
 	tests := map[string]struct {
 		status       []error
@@ -198,7 +198,7 @@ func TestUnitBatchAck(t *testing.T) {
 				},
 			}
 
-			err := b.ack(batch, tt.status)
+			err := processor.ack(batch, tt.status)
 			if tt.wantErr != nil {
 				assert.True(t, errors.Is(err, tt.wantErr), "should return correct error")
 			} else {

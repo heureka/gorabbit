@@ -62,6 +62,7 @@ func (s *TestSuite) TestReconnectPublishing() {
 }
 
 // FIXME: can't cause exception, it is blocked on receiving closing notification.
+//nolint:dupword // it is commented out code
 // func (s *TestSuite) TestReconnectConsume() {
 // 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 // 	defer cancel()
@@ -79,7 +80,7 @@ func (s *TestSuite) TestReconnectPublishing() {
 //
 // 	s.publish(ctx, queue.Name, "1")
 //
-// 	deliveries := s.channel.ConsumeReconn(queue.Name, consumerName, false, false, false, false, nil)
+// 	deliveries := s.channel.Consume(queue.Name, consumerName, false, false, false, false, nil)
 //
 // 	d := <-deliveries
 // 	s.Equal([]byte("1"), d.Body, "should receive first message")
@@ -121,7 +122,7 @@ func (s *TestSuite) TestGracefulShutdown() {
 		}
 	}()
 
-	deliveries := s.channel.ConsumeReconn(queue.Name, consumerName, true, false, false, false, nil)
+	deliveries := s.channel.Consume(queue.Name, consumerName, true, false, false, false, nil)
 
 	done := make(chan struct{})
 	go func() {
@@ -147,6 +148,8 @@ func (s *TestSuite) TestGracefulShutdown() {
 }
 
 // publish in separate channel.
+//
+//nolint:unused // used in commented out test
 func (s *TestSuite) publish(ctx context.Context, queue string, bodies ...string) {
 	ch, err := s.Connection.Channel()
 	if err != nil {
