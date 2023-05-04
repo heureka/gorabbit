@@ -4,6 +4,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/cenkalti/backoff/v4"
 	amqp "github.com/rabbitmq/amqp091-go"
 	"github.com/stretchr/testify/suite"
 )
@@ -20,17 +21,16 @@ func (s *ConnectionSuite) SetupSuite() {
 		s.FailNow("please provide rabbitMQ URL via RABBITMQ_URL environment variable")
 	}
 
-	var err error
 	var connection *amqp.Connection
-	for i := 0; i < 5; i++ {
+	connectFn := func() error {
+		var err error
 		connection, err = amqp.Dial(rmqURL)
-		if err != nil {
-			time.Sleep(time.Second)
-		} else {
-			break
-		}
+		return err
 	}
-	if err != nil {
+
+	bo := backoff.NewExponentialBackOff()
+	bo.MaxElapsedTime = 10 * time.Second
+	if err := backoff.Retry(connectFn, bo); err != nil {
 		s.FailNow("can't open connection", "%q: %s", rmqURL, err)
 	}
 
