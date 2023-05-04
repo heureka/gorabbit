@@ -4,7 +4,7 @@ go 1.16
 
 require (
 	github.com/cenkalti/backoff/v4 v4.1.1
-	github.com/rabbitmq/amqp091-go v0.0.0-20210921101955-bb8191b6c914
-	github.com/rs/zerolog v1.26.0 // indirect
-	github.com/stretchr/testify v1.7.0
+	github.com/rabbitmq/amqp091-go v1.8.0
+	github.com/rs/zerolog v1.26.0
+	github.com/stretchr/testify v1.8.0
 )
