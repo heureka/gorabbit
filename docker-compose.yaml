@@ -1,0 +1,14 @@
+version: "3.8"
+
+services:
+  rabbitmq:
+    image: rabbitmq:3.10.7-management
+    hostname: 'rabbit'
+    ports:
+      - "15672:15672"
+      - "5672:5672"
+    healthcheck:
+      test: rabbitmq-diagnostics -q ping
+      interval: 15s
+      timeout: 15s
+      retries: 3
