@@ -95,15 +95,15 @@ func (r *Reconnector) Consume(
 
 			// The chan provided will be closed when the Channel is closed and on a
 			// graceful close, no error will be sent.
-			channelClosedCh := r.Channel.NotifyClose(make(chan *amqp.Error))
+			channelClosedCh := r.Channel.NotifyClose(make(chan *amqp.Error, 1))
 
-			newDels, err := r.Channel.Consume(queue, consumer, autoAck, exclusive, noLocal, noWait, args)
+			newDelsCh, err := r.Channel.Consume(queue, consumer, autoAck, exclusive, noLocal, noWait, args)
 			if err != nil {
 				r.notifyError(fmt.Errorf("consume from channel: %w", err))
 				continue
 			}
 			// forward all deliveries until closed
-			for d := range newDels {
+			for d := range newDelsCh {
 				deliveries <- d
 			}
 
