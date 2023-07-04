@@ -4,12 +4,12 @@ import (
 	"github.com/heureka/gorabbit/channel"
 )
 
-// ConsumerOption allows to configure RabbitMQ Consumer.
-type ConsumerOption func(c *config)
+// Option allows to configure RabbitMQ Consumer.
+type Option func(c *config)
 
 // WithChannelQOS sets channel's Quality of Service. Will reset QOS on reconnection.
 // Please refer to https://www.rabbitmq.com/confirms.html#channel-qos-prefetch.
-func WithChannelQOS(prefetchCount, prefetchSize int, global bool) ConsumerOption {
+func WithChannelQOS(prefetchCount, prefetchSize int, global bool) Option {
 	return func(c *config) {
 		c.qos.prefetchCount = prefetchCount
 		c.qos.prefetchSize = prefetchSize
@@ -18,7 +18,7 @@ func WithChannelQOS(prefetchCount, prefetchSize int, global bool) ConsumerOption
 }
 
 // WithReconnector configures channel.Reconnector used in consumer.
-func WithReconnector(ops ...channel.Option) ConsumerOption {
+func WithReconnector(ops ...channel.Option) Option {
 	return func(c *config) {
 		c.channelOps = append(c.channelOps, ops...)
 	}
@@ -29,7 +29,7 @@ type ConsumeOption func(c *consumeCfg)
 
 // WithConsume sets up consuming configuration.
 // Please refer to https://pkg.go.dev/github.com/rabbitmq/amqp091-go?utm_source=godoc#Channel.Consume.
-func WithConsume(ops ...ConsumeOption) ConsumerOption {
+func WithConsume(ops ...ConsumeOption) Option {
 	return func(c *config) {
 		for _, op := range ops {
 			op(&c.consume)

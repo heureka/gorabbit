@@ -62,6 +62,7 @@ func (s *TestSuite) TestReconnectPublishing() {
 	}
 }
 
+// TestReconnectConsume tests channel can reconnect when consuming and channel got closed.
 func (s *TestSuite) TestReconnectConsume() {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()

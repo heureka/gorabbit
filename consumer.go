@@ -33,7 +33,7 @@ type config struct {
 //
 // An empty consumer name will cause the library to generate a unique identity.
 // An empty queue name will cause the broker to generate a unique name https://www.rabbitmq.com/queues.html#server-named-queues.
-func NewConsumer(conn *amqp.Connection, queue string, ops ...ConsumerOption) (*Consumer, error) {
+func NewConsumer(conn channel.Channeler, queue string, ops ...Option) (*Consumer, error) {
 	cfg := config{
 		consume: consumeCfg{
 			tag:       "", // amqp will generate unique ID if not set
@@ -57,15 +57,11 @@ func NewConsumer(conn *amqp.Connection, queue string, ops ...ConsumerOption) (*C
 		conn,
 		append(
 			cfg.channelOps,
-			channel.WithReconnectionCallback(newReconnCallbackQOS(cfg.qos)),
+			channel.WithCreateCallback(newConnCallbackQOS(cfg.qos)),
 		)...,
 	)
 	if err != nil {
 		return nil, fmt.Errorf("channel creation: %w", err)
-	}
-
-	if err := ch.Qos(cfg.qos.prefetchCount, cfg.qos.prefetchSize, cfg.qos.global); err != nil {
-		return nil, fmt.Errorf("set channel QOS: %w", err)
 	}
 
 	return &Consumer{
@@ -77,8 +73,8 @@ func NewConsumer(conn *amqp.Connection, queue string, ops ...ConsumerOption) (*C
 	}, nil
 }
 
-// newReconnCallbackQOS creates new reconnection callback which resets channel's QOS.
-func newReconnCallbackQOS(qos channelQOS) func(*amqp.Channel) error {
+// newConnCallbackQOS creates new connection callback which sets channel's QOS.
+func newConnCallbackQOS(qos channelQOS) func(*amqp.Channel) error {
 	return func(ch *amqp.Channel) error {
 		return ch.Qos(qos.prefetchCount, qos.prefetchSize, qos.global)
 	}
