@@ -5,12 +5,12 @@ import (
 	amqp "github.com/rabbitmq/amqp091-go"
 )
 
-// WithReconnectionCallback sets callback function on reconnection.
+// WithCreateCallback sets callback function on channel creation.
 // Given function will receive a newly created channel.
 // Could be used to set up QoS or listeners for various evens (NotifyClose, NotifyFlow, etc.) after channel recreation.
-func WithReconnectionCallback(fn func(channel *amqp.Channel) error) Option {
+func WithCreateCallback(fn func(channel *amqp.Channel) error) Option {
 	return func(r *Reconnector) {
-		r.onReconnect = append(r.onReconnect, fn)
+		r.onCreate = append(r.onCreate, fn)
 	}
 }
 

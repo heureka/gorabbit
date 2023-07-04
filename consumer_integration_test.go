@@ -20,7 +20,7 @@ type ConsumerTestSuite struct {
 //nolint:gocognit // complexity is fine for a test
 func (s *ConsumerTestSuite) TestConsume() {
 	tests := map[string]struct {
-		options      []gorabbit.ConsumerOption
+		options      []gorabbit.Option
 		messages     [][]byte
 		consumeErr   error
 		wantReceived [][]byte
