@@ -3,6 +3,7 @@ package channel_test
 import (
 	"context"
 	"testing"
+	"time"
 
 	amqp "github.com/rabbitmq/amqp091-go"
 	"github.com/stretchr/testify/suite"
@@ -61,46 +62,44 @@ func (s *TestSuite) TestReconnectPublishing() {
 	}
 }
 
-// FIXME: can't cause exception, it is blocked on receiving closing notification.
-//nolint:dupword // it is commented out code
-// func (s *TestSuite) TestReconnectConsume() {
-// 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-// 	defer cancel()
-// 	consumerName := "test-consumer"
-//
-// 	queue, err := s.channel.QueueDeclare("test-queue", false, false, false, false, nil)
-// 	if err != nil {
-// 		s.FailNow("declare queue", err)
-// 	}
-//
-// 	// Purge the queue from the publisher side to establish initial state
-// 	if _, err := s.channel.QueuePurge(queue.Name, false); err != nil {
-// 		s.FailNow("purge queue", err)
-// 	}
-//
-// 	s.publish(ctx, queue.Name, "1")
-//
-// 	deliveries := s.channel.Consume(queue.Name, consumerName, false, false, false, false, nil)
-//
-// 	d := <-deliveries
-// 	s.Equal([]byte("1"), d.Body, "should receive first message")
-//
-// 	if err := d.Ack(false); err != nil {
-// 		s.FailNow("ack delivery", err)
-// 	}
-//
-// 	//  Simulate an error like a server restart
-// 	s.causeException(ctx)
-//
-// 	s.publish(ctx, queue.Name, "2")
-//
-// 	d = <-deliveries
-// 	s.Equal([]byte("2"), d.Body, "should receive second message")
-//
-// 	if err := s.channel.Cancel(consumerName, false); err != nil {
-// 		s.FailNow("cancel delivering", err)
-// 	}
-// }
+func (s *TestSuite) TestReconnectConsume() {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	consumerName := "test-consumer"
+
+	queue, err := s.channel.QueueDeclare("test-queue", false, false, false, false, nil)
+	if err != nil {
+		s.FailNow("declare queue", err)
+	}
+
+	// Purge the queue from the publisher side to establish initial state
+	if _, err := s.channel.QueuePurge(queue.Name, false); err != nil {
+		s.FailNow("purge queue", err)
+	}
+
+	s.publish(ctx, queue.Name, "1")
+
+	deliveries := s.channel.Consume(queue.Name, consumerName, false, false, false, false, nil)
+
+	d := <-deliveries
+	s.Equal([]byte("1"), d.Body, "should receive first message")
+
+	if err := d.Ack(false); err != nil {
+		s.FailNow("ack delivery", err)
+	}
+
+	//  Simulate an error like a server restart
+	s.causeException(ctx)
+
+	s.publish(ctx, queue.Name, "2")
+
+	d = <-deliveries
+	s.Equal([]byte("2"), d.Body, "should receive second message")
+
+	if err := s.channel.Cancel(consumerName, false); err != nil {
+		s.FailNow("cancel delivering", err)
+	}
+}
 
 func (s *TestSuite) TestGracefulShutdown() {
 	consumerName := "test-consumer"
