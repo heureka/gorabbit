@@ -55,8 +55,8 @@ func New(conn Channeler, ops ...Option) (*Reconnector, error) {
 // Option to configure Reconnector.
 type Option func(r *Reconnector)
 
-// NotifyReconnect registers a listener for any reconnection problems.
-// Will send errors appeared during reconnection process to provided channel.
+// NotifyReconnect registers a listener for reconnection attempts.
+// Will send reconnect result for each reconnection attempt.
 // Channel will be closed on graceful shutdown.
 func (r *Reconnector) NotifyReconnect(c chan error) <-chan error {
 	r.mux.Lock()
@@ -67,8 +67,8 @@ func (r *Reconnector) NotifyReconnect(c chan error) <-chan error {
 	return c
 }
 
-// NotifyConsume registers a listener for any start of the consuming.
-// Will send errors appeared during star of the consuming process to provided channel.
+// NotifyConsume registers a listener for start of the consuming process.
+// Will send result of each start of the consuming process.
 // Channel will be closed on graceful shutdown.
 func (r *Reconnector) NotifyConsume(c chan error) <-chan error {
 	r.mux.Lock()
@@ -110,7 +110,6 @@ func (r *Reconnector) Consume(
 		for {
 			if r.Channel.IsClosed() {
 				err := r.reconnect()
-				r.notifyReconnect(err)
 				if err != nil {
 					continue
 				}
@@ -152,6 +151,7 @@ func (r *Reconnector) reconnect() error {
 
 	operation := func() error {
 		channel, err := r.conn.Channel()
+		r.notifyReconnect(err)
 		if err != nil {
 			return fmt.Errorf("create channel: %w", err)
 		}
