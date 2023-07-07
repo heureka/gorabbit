@@ -28,3 +28,9 @@ func WithBackoff(bo backoff.BackOff) Option {
 		r.backoff = bo
 	}
 }
+
+func WithConfig(cfg amqp.Config) Option {
+	return func(r *Redialer) {
+		r.cfg = cfg
+	}
+}
