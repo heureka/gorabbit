@@ -14,6 +14,7 @@ type Redialer struct {
 
 	mux       sync.Mutex
 	url       string
+	cfg       amqp.Config
 	backoff   backoff.BackOff
 	onDialled []func(*amqp.Connection)
 	onAttempt []func(error)
@@ -24,6 +25,7 @@ func Dial(url string, ops ...Option) (*Redialer, error) {
 	r := Redialer{
 		mux:       sync.Mutex{},
 		url:       url,
+		cfg:       amqp.Config{},
 		backoff:   backoff.NewExponentialBackOff(),
 		onDialled: nil,
 	}
@@ -32,7 +34,7 @@ func Dial(url string, ops ...Option) (*Redialer, error) {
 		op(&r)
 	}
 
-	if err := r.dial(); err != nil {
+	if err := r.dial(amqp.Config{}); err != nil {
 		return nil, fmt.Errorf("dial: %w", err)
 	}
 
@@ -46,7 +48,7 @@ type Option func(r *Redialer)
 // Will create connection if channel is closed.
 func (r *Redialer) Channel() (*amqp.Channel, error) {
 	if r.IsClosed() {
-		if err := r.dial(); err != nil {
+		if err := r.dial(r.cfg); err != nil {
 			return nil, err
 		}
 	}
@@ -54,12 +56,12 @@ func (r *Redialer) Channel() (*amqp.Channel, error) {
 	return r.Connection.Channel()
 }
 
-func (r *Redialer) dial() error {
+func (r *Redialer) dial(cfg amqp.Config) error {
 	r.mux.Lock()
 	defer r.mux.Unlock()
 
 	operation := func() error {
-		conn, err := amqp.Dial(r.url)
+		conn, err := amqp.DialConfig(r.url, cfg)
 		r.notifyAttempt(err)
 		if err != nil {
 			err := fmt.Errorf("connection dial: %w", err)
