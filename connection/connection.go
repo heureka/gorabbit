@@ -34,7 +34,7 @@ func Dial(url string, ops ...Option) (*Redialer, error) {
 		op(&r)
 	}
 
-	if err := r.dial(amqp.Config{}); err != nil {
+	if err := r.dial(r.cfg); err != nil {
 		return nil, fmt.Errorf("dial: %w", err)
 	}
 
