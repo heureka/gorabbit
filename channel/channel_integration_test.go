@@ -148,8 +148,6 @@ func (s *TestSuite) TestGracefulShutdown() {
 }
 
 // publish in separate channel.
-//
-//nolint:unused // used in commented out test
 func (s *TestSuite) publish(ctx context.Context, queue string, bodies ...string) {
 	ch, err := s.Connection.Channel()
 	if err != nil {
