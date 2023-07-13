@@ -1,13 +1,14 @@
 package connection_test
 
 import (
+	"os"
+	"testing"
+	"time"
+
 	"github.com/cenkalti/backoff/v4"
 	"github.com/heureka/gorabbit/connection"
 	amqp "github.com/rabbitmq/amqp091-go"
 	"github.com/stretchr/testify/suite"
-	"os"
-	"testing"
-	"time"
 )
 
 type TestSuite struct {

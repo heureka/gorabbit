@@ -2,9 +2,10 @@ package connection
 
 import (
 	"fmt"
+	"sync"
+
 	"github.com/cenkalti/backoff/v4"
 	amqp "github.com/rabbitmq/amqp091-go"
-	"sync"
 )
 
 // Redialer wraps connection to add re-dial capabilities.
