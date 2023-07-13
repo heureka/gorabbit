@@ -59,6 +59,8 @@ func (c *Batch) ack(batch []amqp.Delivery, status []error) error {
 }
 
 // inBatches splits incoming deliveries into batches.
+//
+//nolint:gocognit //it is not too complex
 func (c *Batch) inBatches(deliveries <-chan amqp.Delivery) <-chan []amqp.Delivery {
 	batch := make([]amqp.Delivery, 0, c.amount)
 	batches := make(chan []amqp.Delivery)
@@ -82,6 +84,9 @@ func (c *Batch) inBatches(deliveries <-chan amqp.Delivery) <-chan []amqp.Deliver
 					batch = make([]amqp.Delivery, 0, c.amount)
 				}
 			case <-t.C:
+				if len(batch) == 0 {
+					break
+				}
 				batches <- batch
 				batch = make([]amqp.Delivery, 0, c.amount)
 			}
