@@ -23,11 +23,13 @@ type Reconnector struct {
 	onConsume   []chan<- error
 }
 
-// Channeler creates new channel.
+// Channeler creates new channel. Implemented by amqp.Connection and connection.Redialer.
 type Channeler interface {
 	Channel() (*amqp.Channel, error)
 }
 
+// New creates new Reconnector with channel re-creation capabilities.
+// Accepts additional options, like setting up QoS and registering notifications for events.
 func New(conn Channeler, ops ...Option) (*Reconnector, error) {
 	ch, err := conn.Channel()
 	if err != nil {
