@@ -10,7 +10,7 @@ import (
 )
 
 // NewBatchDeliveryLogging creates batch middleware which logs all incoming deliveries.
-func NewBatchDeliveryLogging(logger *zerolog.Logger) process.BatchMiddleware {
+func NewBatchDeliveryLogging(logger zerolog.Logger) process.BatchMiddleware {
 	return func(handler process.BatchDeliveryHandler) process.BatchDeliveryHandler {
 		return func(ctx context.Context, deliveries []amqp.Delivery) []error {
 			for i := range deliveries {
@@ -28,7 +28,7 @@ func NewBatchDeliveryLogging(logger *zerolog.Logger) process.BatchMiddleware {
 }
 
 // NewBatchErrorLogging creates batch middleware which logs all processing errors.
-func NewBatchErrorLogging(logger *zerolog.Logger) process.BatchMiddleware {
+func NewBatchErrorLogging(logger zerolog.Logger) process.BatchMiddleware {
 	return func(handler process.BatchDeliveryHandler) process.BatchDeliveryHandler {
 		return func(ctx context.Context, deliveries []amqp.Delivery) []error {
 			status := handler(ctx, deliveries)
