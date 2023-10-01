@@ -9,18 +9,19 @@ import (
 	amqp "github.com/rabbitmq/amqp091-go"
 )
 
-// Reconnector wraps channel to add reconnection capabilities.
+// Reopener wraps channel to add re-open capabilities.
+// It re-opens channel on channel errors, but closes on graceful shutdown.
 // All methods of the regular channel are also available.
-type Reconnector struct {
+type Reopener struct {
 	*amqp.Channel
 
 	mux     sync.Mutex
 	conn    Channeler
 	backoff backoff.BackOff
 
-	onCreate    []func(*amqp.Channel) error
-	onReconnect []chan<- error
-	onConsume   []chan<- error
+	onCreate  []func(*amqp.Channel) error
+	onReopen  []chan<- error
+	onConsume []chan<- error
 }
 
 // Channeler creates new channel. Implemented by amqp.Connection and connection.Redialer.
@@ -28,15 +29,15 @@ type Channeler interface {
 	Channel() (*amqp.Channel, error)
 }
 
-// New creates new Reconnector with channel re-creation capabilities.
+// New creates new Reopener with channel re-open capabilities.
 // Accepts additional options, like setting up QoS and registering notifications for events.
-func New(conn Channeler, ops ...Option) (*Reconnector, error) {
+func New(conn Channeler, ops ...Option) (*Reopener, error) {
 	ch, err := conn.Channel()
 	if err != nil {
 		return nil, fmt.Errorf("create channel: %w", err)
 	}
 
-	r := Reconnector{
+	r := Reopener{
 		Channel: ch,
 		mux:     sync.Mutex{},
 		conn:    conn,
@@ -47,32 +48,33 @@ func New(conn Channeler, ops ...Option) (*Reconnector, error) {
 		op(&r)
 	}
 
-	if err := r.createCallback(ch); err != nil {
+	if err := r.openCallback(ch); err != nil {
 		return nil, err
 	}
 
 	return &r, err
 }
 
-// Option to configure Reconnector.
-type Option func(r *Reconnector)
+// Option to configure Reopener.
+type Option func(r *Reopener)
 
-// NotifyReconnect registers a listener for reconnection attempts.
-// Will send reconnect result for each reconnection attempt.
+// NotifyReopen registers a listener for re-open attempts.
+// Will send reopen result for each opening attempt.
 // Channel will be closed on graceful shutdown.
-func (r *Reconnector) NotifyReconnect(c chan error) <-chan error {
+func (r *Reopener) NotifyReopen(c chan error) <-chan error {
 	r.mux.Lock()
 	defer r.mux.Unlock()
 
-	r.onReconnect = append(r.onReconnect, c)
+	r.onReopen = append(r.onReopen, c)
 
 	return c
 }
 
 // NotifyConsume registers a listener for start of the consuming process.
-// Will send result of each start of the consuming process.
+// Will send result of each start of the consuming process,
+// so it is possible to catch all restarting of consuming.
 // Channel will be closed on graceful shutdown.
-func (r *Reconnector) NotifyConsume(c chan error) <-chan error {
+func (r *Reopener) NotifyConsume(c chan error) <-chan error {
 	r.mux.Lock()
 	defer r.mux.Unlock()
 
@@ -81,25 +83,25 @@ func (r *Reconnector) NotifyConsume(c chan error) <-chan error {
 	return c
 }
 
-// PublishWithContext checks if channel is closed and reconnects if needed.
+// PublishWithContext checks if channel is closed and re-opens if needed.
 // Useful to reliably publish events even after channel errors (which closes channel).
 //
 //nolint:gocritic // interface should be the same as Publish
-func (r *Reconnector) PublishWithContext(ctx context.Context, exchange, key string, mandatory, immediate bool, msg amqp.Publishing) error {
+func (r *Reopener) PublishWithContext(ctx context.Context, exchange, key string, mandatory, immediate bool, msg amqp.Publishing) error {
 	if r.Channel.IsClosed() {
-		if err := r.reconnect(); err != nil {
-			return fmt.Errorf("reconnect: %w", err)
+		if err := r.reopen(); err != nil {
+			return fmt.Errorf("reopen: %w", err)
 		}
 	}
 
 	return r.Channel.PublishWithContext(ctx, exchange, key, mandatory, immediate, msg)
 }
 
-// Consume consumes with reconnection of the channel. Provides constant flow of the deliveries.
+// Consume consumes with re-open of the channel. Provides constant flow of the deliveries.
 // On graceful closing of the channel, will deliver all remaining deliveries and exit.
 //
 //nolint:gocognit // complex function, will rewrite later
-func (r *Reconnector) Consume(
+func (r *Reopener) Consume(
 	queue, consumer string,
 	autoAck, exclusive, noLocal, noWait bool,
 	args amqp.Table,
@@ -111,7 +113,7 @@ func (r *Reconnector) Consume(
 
 		for {
 			if r.Channel.IsClosed() {
-				err := r.reconnect()
+				err := r.reopen()
 				if err != nil {
 					continue
 				}
@@ -134,11 +136,11 @@ func (r *Reconnector) Consume(
 			select {
 			case amqpErr := <-channelClosedCh:
 				if amqpErr == nil { // on graceful close no error will be sent
-					closeAll(append(r.onConsume, r.onReconnect...))
+					closeAll(append(r.onConsume, r.onReopen...))
 					return
 				}
 			default: // if no channelClosed notification received, that means delivering was closed by user
-				closeAll(append(r.onConsume, r.onReconnect...))
+				closeAll(append(r.onConsume, r.onReopen...))
 				return
 			}
 		}
@@ -147,19 +149,19 @@ func (r *Reconnector) Consume(
 	return deliveries
 }
 
-func (r *Reconnector) reconnect() error {
+func (r *Reopener) reopen() error {
 	r.mux.Lock()
 	defer r.mux.Unlock()
 
 	operation := func() error {
 		channel, err := r.conn.Channel()
-		r.notifyReconnect(err)
+		r.notifyReopen(err)
 		if err != nil {
-			return fmt.Errorf("create channel: %w", err)
+			return fmt.Errorf("open channel: %w", err)
 		}
 
-		if err := r.createCallback(channel); err != nil {
-			return fmt.Errorf("on reconnect callback: %w", err)
+		if err := r.openCallback(channel); err != nil {
+			return fmt.Errorf("on reopen callback: %w", err)
 		}
 
 		r.Channel = channel
@@ -170,7 +172,7 @@ func (r *Reconnector) reconnect() error {
 	return backoff.Retry(operation, r.backoff)
 }
 
-func (r *Reconnector) createCallback(channel *amqp.Channel) error {
+func (r *Reopener) openCallback(channel *amqp.Channel) error {
 	for _, fn := range r.onCreate {
 		if err := fn(channel); err != nil {
 			return fmt.Errorf("on create callback: %w", err)
@@ -180,13 +182,13 @@ func (r *Reconnector) createCallback(channel *amqp.Channel) error {
 	return nil
 }
 
-func (r *Reconnector) notifyReconnect(err error) {
-	for _, ch := range r.onReconnect {
+func (r *Reopener) notifyReopen(err error) {
+	for _, ch := range r.onReopen {
 		ch <- err
 	}
 }
 
-func (r *Reconnector) notifyConsume(err error) {
+func (r *Reopener) notifyConsume(err error) {
 	for _, ch := range r.onConsume {
 		ch <- err
 	}
