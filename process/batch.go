@@ -34,8 +34,8 @@ type BatchMiddleware func(BatchDeliveryHandler) BatchDeliveryHandler
 // Returns one-to-one errors of processed deliveries.
 type BatchDeliveryHandler func(context.Context, []amqp.Delivery) (status []error)
 
-// Consume messages in batches.
-func (c *Batch) Consume(ctx context.Context, deliveries <-chan amqp.Delivery) error {
+// Process messages in batches.
+func (c *Batch) Process(ctx context.Context, deliveries <-chan amqp.Delivery) error {
 	for b := range c.inBatches(deliveries) {
 		failed := c.handler(ctx, b)
 

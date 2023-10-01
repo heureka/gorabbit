@@ -111,7 +111,7 @@ func TestUnitOneConsume(t *testing.T) {
 			}
 
 			one := ByOne(tx, false)
-			err := one.Consume(context.TODO(), deliveriesCh)
+			err := one.Process(context.TODO(), deliveriesCh)
 			if tt.wantErr != nil {
 				assert.True(t, errors.Is(err, tt.wantErr), "should return correct error")
 			} else {
