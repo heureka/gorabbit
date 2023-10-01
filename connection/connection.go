@@ -21,7 +21,7 @@ type Redialer struct {
 	onAttempt []func(error)
 }
 
-// Dial is regular amqp.Dial with re-dialing and backoff.
+// Dial is a regular amqp.Dial with re-dialing and backoff.
 func Dial(url string, ops ...Option) (*Redialer, error) {
 	r := Redialer{
 		mux:       sync.Mutex{},
