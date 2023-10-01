@@ -5,14 +5,14 @@ import (
 	"time"
 
 	"github.com/cenkalti/backoff/v4"
-	amqp "github.com/rabbitmq/amqp091-go"
+	"github.com/heureka/gorabbit/connection"
 	"github.com/stretchr/testify/suite"
 )
 
 // ConnectionSuite creates RabbitMQ connection on test setup.
 type ConnectionSuite struct {
 	suite.Suite
-	Connection *amqp.Connection
+	Connection *connection.Redialer
 }
 
 func (s *ConnectionSuite) SetupSuite() {
@@ -21,20 +21,14 @@ func (s *ConnectionSuite) SetupSuite() {
 		s.FailNow("please provide rabbitMQ URL via RABBITMQ_URL environment variable")
 	}
 
-	var connection *amqp.Connection
-	connectFn := func() error {
-		var err error
-		connection, err = amqp.Dial(rmqURL)
-		return err
-	}
-
 	bo := backoff.NewExponentialBackOff()
 	bo.MaxElapsedTime = 10 * time.Second
-	if err := backoff.Retry(connectFn, bo); err != nil {
+	conn, err := connection.Dial(rmqURL, connection.WithBackoff(bo))
+	if err != nil {
 		s.FailNow("can't open connection", "%q: %s", rmqURL, err)
 	}
 
-	s.Connection = connection
+	s.Connection = conn
 }
 
 func (s *ConnectionSuite) TearDownSuite() {
