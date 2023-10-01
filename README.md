@@ -1,42 +1,62 @@
 # GoRabbit
 
-**This package is WIP**
-
-TODO: add labels
-
 GoRabbit provides additional capabilities for official RabbitMQ Go client [amqp091-go](https://github.com/rabbitmq/amqp091-go).
 
-## Reconnection
+## Connection re-dialing
 
-This package adds channel reconnection capabilities on the top of a plain channel.
+Add re-dialing capabilities when connection got closed,
+you can reliably open new channel:
 
 ```go
-ch := channel.New(conn)
-// will reconnect on channel errors
-deliveries := ch.ConsumeReconn("my-queue", "", false, false, false, false, nil)
+conn, _ := connection.Dial("amqp://localhost:5672")
+ch, _ := conn.Channel() // use as regular connection, but it will re-dial if connection is closed 
+ch.Publish(...)
 ```
 
-You are welcomed to use it separately or together with [consumer](#consumer).
+See full example at [examples/connection](./examples/connection/main.go).
 
+## Channel re-opening
 
-## Consumer
+Add channel re-opening capabilities on the top of a plain channel, 
+so you can get reliably consume or publish, even is something bad happened over the network.
 
-Consumers are hard to write correctly. That's why we are providing [process](./process) building blocks:
+```go
+conn, _ := connection.Dial("amqp://localhost:5672")
+ch, _ := channel.New(conn) // add re-opening capabilities
+// get constant flow of deliveries, channel will be re-opened if something goes south
+deliveries := ch.Consume("example-queue", "", false, false, false, false, nil)
+for d := range deliveries {
+    // process deliveries
+}
+// or publish reliably
+ch.PublishWithContext(ctx, "example-exchange", "", false, false, amqp.Publishing{})
+```
+See full example at [examples/channel](./examples/channel/main.go).
 
-- One and Batch consumers, where all you need is to write `Transaction` and pass it to a consumer.
-    `Transaction` is a function for handling received message:
-    if it returns error, consumer will automatically NACK message, ACK on success.
+## Consumers
 
-- you can write your own consumer, implementing simple interface:
-    ```go
-    type Consumer interface {
-        Consume(ctx context.Context, deliveries <-chan amqp.Delivery) error
+GoRabbit provides [consumer](./consumer.go), 
+which simplifies creation of RabbitMQ consumer. 
+It aims to provide sane defaults, but at the same time is fully configurable:
+
+```go
+conn, _ := connection.Dial("amqp://localhost:5672")
+ch, _ := channel.New(conn) 
+consumer := gorabbit.NewConsumer(channel, "example-queue")
+consumer.Start(context.Background(), gorabbit.ProcessorFunc(func(ctx context.Context, deliveries <-chan amqp.Delivery) error {
+    for d := range deliveries {
+        // process deliveries
     }
-    ```
-    Set-ups and reconnections will be handled for you.
+    return nil
+}))
 
+```
+See full example at [examples/consumer](./examples/consumer/main.go).
 
-All consumers have sane defaults, but at the same time fully configurable.
+To simplify it even more, GoRabbit is providing [process](./process) building blocks:
+[ByOne](#one) and [InBatches](#batch). All you need is to write a function 
+for handling received messages:
+if it returns error, processor will automatically NACK message, ACK on success.
 
 ### One
 
@@ -47,7 +67,13 @@ Example of usage is in [examples/one](examples/one/main.go).
 
 ### One Middlewares
 
-Easily plug in any middlewares and pass them to `Consumer`, implementing simple API:
+Easily plug-in any middlewares and pass them to `process.ByOne`:
+
+```go
+process.ByOne(myHandler, true, middleware.NewErrorLogging(zerolog.New(os.Stderr))) 
+```
+
+Or implement your own with simple API:
 
 ```go
 type Middleware func(DeliveryHandler) DeliveryHandler
@@ -57,9 +83,9 @@ Check out more examples at [process/middleware/one.go](./process/middleware/one.
 
 ### Batch
 
-If you want to process messages in batches, [Batch consumer](process/batch.go) is here for you.
+If you want to process messages in batches, [Batch processor](process/batch.go) is here for you.
 
-Batch consumer reads batch of messages from a broker and passes them to `BatchTransaction`. 
+Batch processor reads a batch of messages from a broker and passes them to `BatchTransaction`. 
 Your code expected to return one-to-one errors for each passed message (`len(messages) == len(errors)`).
 
 Consumer will ACK each of messages on success, NACK on error.
@@ -71,7 +97,33 @@ Example of usage is in [examples/batch](examples/batch/main.go).
 Plug in any middlewares and pass them to the Batch consumer, implementing simple API:
 
 ```go
+process.InBatches(myHandler, true, middleware.NewBatchErrorLogging(zerolog.New(os.Stderr))) 
+```
+
+Or implement your own with simple API:
+
+```go
 type BatchMiddleware func(BatchDeliveryHandler) BatchDeliveryHandler
 ```
 
 Check out more examples at [process/middleware/batch.go](./process/middleware/batch.go).
+
+# Testing
+
+GoRabbit comes with testing helpers in a form of [stretchr/testify/suite](https://pkg.go.dev/github.com/stretchr/testify/suite)
+testing suite,  with prepared RabbitMQ connection, channel or topology.
+
+```go
+type TestSuite struct {
+  rabbittest.ChannelSuite
+}
+
+func (s *TestSuite) TestMyFunction() {
+  s.Channel.Publish(...)
+}
+```
+
+Set up RABBITMQ_URL environment variable and tun tests:
+```shell
+RABBITMQ_URL=amqp://localhost:5672 go test -v  ./...
+```
