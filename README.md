@@ -97,7 +97,7 @@ Example of usage is in [examples/batch](examples/batch/main.go).
 Plug in any middlewares and pass them to the Batch consumer, implementing simple API:
 
 ```go
-process.InBatches(myHandler, true, middleware.NewBatchErrorLogging(zerolog.New(os.Stderr))) 
+process.InBatches(100, time.Second, tx, false, middleware.NewBatchErrorLogging(zerolog.New(os.Stderr))) 
 ```
 
 Or implement your own with simple API:
@@ -107,6 +107,27 @@ type BatchMiddleware func(BatchDeliveryHandler) BatchDeliveryHandler
 ```
 
 Check out more examples at [process/middleware/batch.go](./process/middleware/batch.go).
+
+# Publishing
+
+Publishing is done using channel [`channel.New`](#channel-re-opening) the same way as in regular RabbitMQ client.
+But GoRabbit also has helpers to simplify adding middlewares to your publisher.
+Use `publish.Wrap` do add as much middlewares as you want:
+
+```go
+p := publish.Wrap(ch, publish.WithHeaders(amqp.Table{"x-example-header": "example-value"}))
+p.PublishWithContext(
+    context.Background(),
+    "example-exchange",
+    "example-key",
+    false,
+    false,
+    amqp.Publishing{Body: []byte("hello world!")},
+)
+
+```
+
+See full example at [examples/publish](./examples/publish/main.go).
 
 # Testing
 
