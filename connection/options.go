@@ -23,12 +23,16 @@ func WithDialAttemptCallback(fn func(error)) Option {
 }
 
 // WithBackoff sets backoff function for reconnection.
+// By default, uses backoff.NewExponentialBackOff.
 func WithBackoff(bo backoff.BackOff) Option {
 	return func(r *Redialer) {
 		r.backoff = bo
 	}
 }
 
+// WithConfig uses provided cfg to specify a configuration for
+// the transport and connection setup used during a connection open handshake.
+// See more: https://pkg.go.dev/github.com/rabbitmq/amqp091-go@v1.8.0#DialConfig.
 func WithConfig(cfg amqp.Config) Option {
 	return func(r *Redialer) {
 		r.cfg = cfg
