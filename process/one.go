@@ -29,8 +29,8 @@ type DeliveryHandler func(context.Context, amqp.Delivery) error
 // Could be used for logging, tracing, etc.
 type Middleware func(DeliveryHandler) DeliveryHandler
 
-// Consume deliveries.
-func (c *One) Consume(ctx context.Context, deliveries <-chan amqp.Delivery) error {
+// Process deliveries.
+func (c *One) Process(ctx context.Context, deliveries <-chan amqp.Delivery) error {
 	for d := range deliveries {
 		err := c.handler(ctx, d)
 

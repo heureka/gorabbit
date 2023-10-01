@@ -1,44 +1,13 @@
 package gorabbit
 
-import (
-	"github.com/heureka/gorabbit/channel"
-)
+import amqp "github.com/rabbitmq/amqp091-go"
 
 // Option allows to configure RabbitMQ Consumer.
-type Option func(c *config)
-
-// WithChannelQOS sets channel's Quality of Service. Will reset QOS on reconnection.
-// Please refer to https://www.rabbitmq.com/confirms.html#channel-qos-prefetch.
-func WithChannelQOS(prefetchCount, prefetchSize int, global bool) Option {
-	return func(c *config) {
-		c.qos.prefetchCount = prefetchCount
-		c.qos.prefetchSize = prefetchSize
-		c.qos.global = global
-	}
-}
-
-// WithReconnector configures channel.Reconnector used in consumer.
-func WithReconnector(ops ...channel.Option) Option {
-	return func(c *config) {
-		c.channelOps = append(c.channelOps, ops...)
-	}
-}
-
-// ConsumeOption allows to configure RabbitMQ consume options.
-type ConsumeOption func(c *consumeCfg)
-
-// WithConsume sets up consuming configuration.
 // Please refer to https://pkg.go.dev/github.com/rabbitmq/amqp091-go?utm_source=godoc#Channel.Consume.
-func WithConsume(ops ...ConsumeOption) Option {
-	return func(c *config) {
-		for _, op := range ops {
-			op(&c.consume)
-		}
-	}
-}
+type Option func(c *consumeCfg)
 
-// WithConsumerTag sets consumer consumerTag. Otherwise library will generate a unique identity.
-func WithConsumerTag(tag string) ConsumeOption {
+// WithConsumerTag sets consumer consumerTag. Otherwise, library will generate a unique identity.
+func WithConsumerTag(tag string) Option {
 	return func(c *consumeCfg) {
 		c.tag = tag
 	}
@@ -46,14 +15,14 @@ func WithConsumerTag(tag string) ConsumeOption {
 
 // WithConsumeAutoAck sets the server to acknowledge deliveries to this consumer
 // prior to writing the delivery to the network.
-func WithConsumeAutoAck() ConsumeOption {
+func WithConsumeAutoAck() Option {
 	return func(c *consumeCfg) {
 		c.autoAck = true
 	}
 }
 
 // WithConsumeExclusive sets the server to ensure that this is the sole consumer from this queue.
-func WithConsumeExclusive() ConsumeOption {
+func WithConsumeExclusive() Option {
 	return func(c *consumeCfg) {
 		c.exclusive = true
 	}
@@ -61,14 +30,14 @@ func WithConsumeExclusive() ConsumeOption {
 
 // WithConsumeNoWait sets the server to not wait to confirm the request
 // and immediately begin deliveries.
-func WithConsumeNoWait() ConsumeOption {
+func WithConsumeNoWait() Option {
 	return func(c *consumeCfg) {
 		c.noWait = true
 	}
 }
 
 // WithConsumeArgs sets additional arguments for consuming.
-func WithConsumeArgs(args map[string]interface{}) ConsumeOption {
+func WithConsumeArgs(args amqp.Table) Option {
 	return func(c *consumeCfg) {
 		c.args = args
 	}

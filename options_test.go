@@ -15,7 +15,7 @@ func TestUnitConsumeOptions(t *testing.T) {
 		args:      map[string]interface{}{"some": "arg"},
 	}
 
-	ops := []ConsumeOption{
+	ops := []Option{
 		WithConsumerTag("test"),
 		WithConsumeAutoAck(),
 		WithConsumeExclusive(),

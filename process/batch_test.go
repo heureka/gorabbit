@@ -274,7 +274,7 @@ func TestUnitBatchConsume(t *testing.T) {
 			}()
 
 			b := InBatches(2, time.Second, tx, false)
-			err := b.Consume(context.TODO(), deliveriesCh)
+			err := b.Process(context.TODO(), deliveriesCh)
 			if tt.wantErr != nil {
 				assert.True(t, errors.Is(err, tt.wantErr), "should return correct error")
 			} else {

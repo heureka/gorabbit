@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/heureka/gorabbit/channel"
 	amqp "github.com/rabbitmq/amqp091-go"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
@@ -45,21 +46,20 @@ func (s *ConsumerTestSuite) TestConsume() {
 		s.Run(name, func() {
 			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 			defer cancel()
+			ch, err := channel.New(s.Connection)
+			s.Require().NoError(err, "create channel")
 
-			txreader, err := gorabbit.NewConsumer(
-				s.Connection,
+			txreader := gorabbit.NewConsumer(
+				ch,
 				s.Queue,
 				tt.options...,
 			)
-			if err != nil {
-				s.FailNow("create txreader", err)
-			}
 
 			receiveCh := make(chan []byte)
 			defer close(receiveCh)
 
 			consumer := newMockEchoConsumer(receiveCh)
-			consumer.On("Consume", mock.Anything, mock.Anything).Return(tt.consumeErr)
+			consumer.On("Process", mock.Anything, mock.Anything).Return(tt.consumeErr)
 
 			go func() {
 				defer func() {
@@ -90,10 +90,10 @@ func (s *ConsumerTestSuite) TestConsume() {
 }
 
 func (s *ConsumerTestSuite) TestImmediatelyStop() {
-	rmq, err := gorabbit.NewConsumer(
-		s.Connection,
-		s.Queue,
-	)
+	ch, err := channel.New(s.Connection)
+	s.Require().NoError(err)
+
+	rmq := gorabbit.NewConsumer(ch, s.Queue)
 	if err != nil {
 		s.FailNow("create rmq", err)
 	}
@@ -131,7 +131,7 @@ func newMockEchoConsumer(received chan<- []byte) *mockEchoConsumer {
 	}
 }
 
-func (m *mockEchoConsumer) Consume(ctx context.Context, deliveries <-chan amqp.Delivery) error {
+func (m *mockEchoConsumer) Process(ctx context.Context, deliveries <-chan amqp.Delivery) error {
 	args := m.Called(ctx, deliveries)
 
 	for d := range deliveries {
