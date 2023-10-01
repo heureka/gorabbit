@@ -64,11 +64,11 @@ func (c *Batch) ack(batch []amqp.Delivery, status []error) error {
 func (c *Batch) inBatches(deliveries <-chan amqp.Delivery) <-chan []amqp.Delivery {
 	batch := make([]amqp.Delivery, 0, c.amount)
 	batches := make(chan []amqp.Delivery)
-	t := time.NewTicker(c.timeout)
+	ticker := time.NewTicker(c.timeout)
 
 	go func() {
 		defer close(batches)
-		defer t.Stop()
+		defer ticker.Stop()
 
 		for {
 			select {
@@ -83,7 +83,7 @@ func (c *Batch) inBatches(deliveries <-chan amqp.Delivery) <-chan []amqp.Deliver
 					batches <- batch
 					batch = make([]amqp.Delivery, 0, c.amount)
 				}
-			case <-t.C:
+			case <-ticker.C:
 				if len(batch) == 0 {
 					break
 				}

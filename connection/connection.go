@@ -23,7 +23,7 @@ type Redialer struct {
 
 // Dial is a regular amqp.Dial with re-dialing and backoff.
 func Dial(url string, ops ...Option) (*Redialer, error) {
-	r := Redialer{
+	redialer := Redialer{
 		mux:       sync.Mutex{},
 		url:       url,
 		cfg:       amqp.Config{},
@@ -32,14 +32,14 @@ func Dial(url string, ops ...Option) (*Redialer, error) {
 	}
 
 	for _, op := range ops {
-		op(&r)
+		op(&redialer)
 	}
 
-	if err := r.dial(r.cfg); err != nil {
+	if err := redialer.dial(redialer.cfg); err != nil {
 		return nil, fmt.Errorf("dial: %w", err)
 	}
 
-	return &r, nil
+	return &redialer, nil
 }
 
 // Option to configure Reconnector.

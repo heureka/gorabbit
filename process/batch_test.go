@@ -72,7 +72,7 @@ func TestUnitBatchInBatches(t *testing.T) {
 	tx := func(ctx context.Context, msgs [][]byte) []error {
 		return make([]error, len(msgs))
 	}
-	b := InBatches(2, time.Second, tx, false)
+	batchProcessing := InBatches(2, time.Second, tx, false)
 
 	deliveriesCh := make(chan amqp.Delivery)
 	go func() {
@@ -83,7 +83,7 @@ func TestUnitBatchInBatches(t *testing.T) {
 		}
 	}()
 
-	batches := b.inBatches(deliveriesCh)
+	batches := batchProcessing.inBatches(deliveriesCh)
 
 	got := make([][]amqp.Delivery, 0, 2)
 	for b := range batches {

@@ -9,6 +9,8 @@ type ChannelSuite struct {
 	Channel *amqp.Channel
 }
 
+// SetupTest creates new channel.
+// Implements suite.SetupTestSuite.
 func (s *ChannelSuite) SetupTest() {
 	ch, err := s.Connection.Channel()
 	if err != nil {
@@ -18,6 +20,8 @@ func (s *ChannelSuite) SetupTest() {
 	s.Channel = ch
 }
 
+// TearDownTest closes channel.
+// Implements suite.TearDownTestSuite.
 func (s *ChannelSuite) TearDownTest() {
 	if err := s.Channel.Close(); err != nil {
 		s.Fail("close channel", err)

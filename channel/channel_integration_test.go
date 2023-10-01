@@ -83,10 +83,10 @@ func (s *TestSuite) TestReopenConsume() {
 
 	deliveries := s.channel.Consume(queue.Name, consumerName, false, false, false, false, nil)
 
-	d := <-deliveries
-	s.Equal([]byte("1"), d.Body, "should receive first message")
+	delivery := <-deliveries
+	s.Equal([]byte("1"), delivery.Body, "should receive first message")
 
-	if err := d.Ack(false); err != nil {
+	if err := delivery.Ack(false); err != nil {
 		s.FailNow("ack delivery", err)
 	}
 
@@ -95,8 +95,8 @@ func (s *TestSuite) TestReopenConsume() {
 
 	s.publish(ctx, queue.Name, "2")
 
-	d = <-deliveries
-	s.Equal([]byte("2"), d.Body, "should receive second message")
+	delivery = <-deliveries
+	s.Equal([]byte("2"), delivery.Body, "should receive second message")
 
 	if err := s.channel.Cancel(consumerName, false); err != nil {
 		s.FailNow("cancel delivering", err)
@@ -150,18 +150,18 @@ func (s *TestSuite) TestGracefulShutdown() {
 
 // publish in separate channel.
 func (s *TestSuite) publish(ctx context.Context, queue string, bodies ...string) {
-	ch, err := s.Connection.Channel()
+	channel, err := s.Connection.Channel()
 	if err != nil {
 		s.FailNow("create channel")
 	}
 	defer func() {
-		if err := ch.Close(); err != nil {
+		if err := channel.Close(); err != nil {
 			s.FailNow("close channel", err)
 		}
 	}()
 
 	for _, b := range bodies {
-		err = ch.PublishWithContext(ctx, "", queue, false, false, amqp.Publishing{Body: []byte(b)})
+		err = channel.PublishWithContext(ctx, "", queue, false, false, amqp.Publishing{Body: []byte(b)})
 		if err != nil {
 			s.FailNow("publish", err)
 		}

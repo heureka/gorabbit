@@ -32,27 +32,27 @@ type Channeler interface {
 // New creates new Reopener with channel re-open capabilities.
 // Accepts additional options, like setting up QoS and registering notifications for events.
 func New(conn Channeler, ops ...Option) (*Reopener, error) {
-	ch, err := conn.Channel()
+	channel, err := conn.Channel()
 	if err != nil {
 		return nil, fmt.Errorf("create channel: %w", err)
 	}
 
-	r := Reopener{
-		Channel: ch,
+	reopener := Reopener{
+		Channel: channel,
 		mux:     sync.Mutex{},
 		conn:    conn,
 		backoff: backoff.NewExponentialBackOff(),
 	}
 
 	for _, op := range ops {
-		op(&r)
+		op(&reopener)
 	}
 
-	if err := r.openCallback(ch); err != nil {
+	if err := reopener.openCallback(channel); err != nil {
 		return nil, err
 	}
 
-	return &r, err
+	return &reopener, err
 }
 
 // Option to configure Reopener.

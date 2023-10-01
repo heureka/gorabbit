@@ -15,6 +15,8 @@ type ConnectionSuite struct {
 	Connection *connection.Redialer
 }
 
+// SetupSuite creates new RabbitMQ connection.
+// Implements suite.SetupAllSuite.
 func (s *ConnectionSuite) SetupSuite() {
 	rmqURL := os.Getenv("RABBITMQ_URL")
 	if rmqURL == "" {
@@ -31,6 +33,8 @@ func (s *ConnectionSuite) SetupSuite() {
 	s.Connection = conn
 }
 
+// TearDownSuite closes RabbitMQ connection.
+// Implements suite.TearDownAllSuite.
 func (s *ConnectionSuite) TearDownSuite() {
 	if err := s.Connection.Close(); err != nil {
 		s.Fail("close connection", err)
