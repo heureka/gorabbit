@@ -31,7 +31,7 @@ type Channel interface {
 //
 // An empty consumer name will cause the library to generate a unique identity.
 // An empty queue name will cause the broker to generate a unique name https://www.rabbitmq.com/queues.html#server-named-queues.
-func NewConsumer(ch Channel, queue string, ops ...Option) Consumer {
+func NewConsumer(channel Channel, queue string, ops ...Option) Consumer {
 	cfg := consumeCfg{
 		tag:       "", // amqp will generate unique ID if not set
 		autoAck:   false,
@@ -45,7 +45,7 @@ func NewConsumer(ch Channel, queue string, ops ...Option) Consumer {
 	}
 
 	return Consumer{
-		channel:    ch,
+		channel:    channel,
 		queueName:  queue,
 		consumeCfg: cfg,
 		done:       nil,
@@ -161,14 +161,17 @@ func acknowledgerProxy(acker amqp.Acknowledger, deliveries <-chan amqp.Delivery)
 // Useful to avoid calls when autoAck is set.
 type ackIgnorer struct{}
 
+// Ack acknowledges a message.
 func (a ackIgnorer) Ack(uint64, bool) error {
 	return nil
 }
 
+// Nack negatively acknowledges a message.
 func (a ackIgnorer) Nack(uint64, bool, bool) error {
 	return nil
 }
 
+// Reject rejects a message.
 func (a ackIgnorer) Reject(uint64, bool) error {
 	return nil
 }

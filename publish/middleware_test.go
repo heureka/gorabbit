@@ -35,27 +35,27 @@ func TestPublishWithHeaders(t *testing.T) {
 
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
-			ch := &fakeChannel{}
-			wrapped := publish.Wrap(ch, publish.WithHeaders(headers))
+			channel := &fakeChannel{}
+			wrapped := publish.Wrap(channel, publish.WithHeaders(headers))
 
 			err := wrapped.PublishWithContext(context.TODO(), "test", "test", false, false, tt.msg)
 			require.NoError(t, err)
 
-			require.Len(t, ch.published, 1, "should publish one message")
+			require.Len(t, channel.published, 1, "should publish one message")
 
-			assert.Equal(t, tt.want, ch.published[0].Headers, "should publish with expected headers")
+			assert.Equal(t, tt.want, channel.published[0].Headers, "should publish with expected headers")
 		})
 	}
 }
 
 func TestPublishWithExpiration(t *testing.T) {
-	ch := &fakeChannel{}
-	wrapped := publish.Wrap(ch, publish.WithExpiration(time.Second))
+	channel := &fakeChannel{}
+	wrapped := publish.Wrap(channel, publish.WithExpiration(time.Second))
 
 	err := wrapped.PublishWithContext(context.TODO(), "test", "test", false, false, amqp.Publishing{})
 	require.NoError(t, err)
 
-	require.Len(t, ch.published, 1, "should publish one message")
+	require.Len(t, channel.published, 1, "should publish one message")
 
-	assert.Equal(t, "1000", ch.published[0].Expiration, "should publish 1000ms expiration")
+	assert.Equal(t, "1000", channel.published[0].Expiration, "should publish 1000ms expiration")
 }

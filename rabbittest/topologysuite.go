@@ -9,6 +9,8 @@ type TopologySuite struct {
 	Key      string
 }
 
+// SetupTest creates exchange, queue and binds queue to be consume messages with Key.
+// Implements suite.SetupTestSuite.
 func (s *TopologySuite) SetupTest() {
 	s.ChannelSuite.SetupTest()
 
@@ -49,6 +51,8 @@ func (s *TopologySuite) SetupTest() {
 	}
 }
 
+// TearDownTest deletes exchange and queue.
+// Implements suite.TearDownTestSuite.
 func (s *TopologySuite) TearDownTest() {
 	if err := s.Channel.ExchangeDelete(s.Exchange, false, false); err != nil {
 		s.Fail("delete exchange", s.Exchange, err)
