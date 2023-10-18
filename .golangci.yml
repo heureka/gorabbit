@@ -43,6 +43,7 @@ linters-settings:
       - i int
       - ix int
       - wg sync.WaitGroup
+      - eg errgroup.Group
   revive:
     severity: error
     ignore-generated-header: true # ignores files with "GENERATED" header
