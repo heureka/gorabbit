@@ -1,3 +1,8 @@
+[![Go Reference](https://pkg.go.dev/badge/github.com/heureka/gorabbit.svg)](https://pkg.go.dev/github.com/heureka/gorabbit)
+![GitHub tag (with filter)](https://img.shields.io/github/v/tag/heureka/gorabbit)
+![GitHub Workflow Status (with event)](https://img.shields.io/github/actions/workflow/status/heureka/gorabbit/go.yml)
+
+
 # GoRabbit
 
 GoRabbit provides additional capabilities for official RabbitMQ Go client [amqp091-go](https://github.com/rabbitmq/amqp091-go).
