@@ -16,7 +16,7 @@ type Consumer struct {
 	queueName  string
 	consumeCfg consumeCfg
 
-	done chan struct{}
+	done sync.WaitGroup
 }
 
 // Channel is a RabbitMQ channel opened for consuming deliveries.
@@ -31,7 +31,7 @@ type Channel interface {
 //
 // An empty consumer name will cause the library to generate a unique identity.
 // An empty queue name will cause the broker to generate a unique name https://www.rabbitmq.com/queues.html#server-named-queues.
-func NewConsumer(channel Channel, queue string, ops ...Option) Consumer {
+func NewConsumer(channel Channel, queue string, ops ...Option) *Consumer {
 	cfg := consumeCfg{
 		tag:       "", // amqp will generate unique ID if not set
 		autoAck:   false,
@@ -44,11 +44,10 @@ func NewConsumer(channel Channel, queue string, ops ...Option) Consumer {
 		op(&cfg)
 	}
 
-	return Consumer{
+	return &Consumer{
 		channel:    channel,
 		queueName:  queue,
 		consumeCfg: cfg,
-		done:       nil,
 	}
 }
 
@@ -96,8 +95,8 @@ func (c *Consumer) Start(ctx context.Context, processor Processor) error {
 		deliveries = acknowledgerProxy(ackIgnorer{}, deliveries)
 	}
 
-	c.done = make(chan struct{})
-	defer close(c.done) // close when .Process is unblocked
+	c.done.Add(1)
+	defer c.done.Done() // done when .Process is unblocked
 
 	return processor.Process(ctx, deliveries)
 }
@@ -110,9 +109,7 @@ func (c *Consumer) Stop() error {
 	}
 
 	// wait for consuming to stop
-	if c.done != nil {
-		<-c.done
-	}
+	c.done.Wait()
 
 	if err := c.channel.Close(); err != nil {
 		return fmt.Errorf("close channel: %w", err)
