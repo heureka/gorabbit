@@ -9,6 +9,7 @@ import (
 	amqp "github.com/rabbitmq/amqp091-go"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
+	"golang.org/x/sync/errgroup"
 
 	"github.com/heureka/gorabbit"
 	"github.com/heureka/gorabbit/rabbittest"
@@ -61,17 +62,10 @@ func (s *ConsumerTestSuite) TestConsume() {
 			consumer := newMockEchoConsumer(receiveCh)
 			consumer.On("Process", mock.Anything, mock.Anything).Return(tt.consumeErr)
 
-			go func() {
-				defer func() {
-					if err := txreader.Stop(); err != nil { // will wait for consuming to stop
-						s.Fail("stop txreader", err)
-					}
-				}()
-
-				if err = txreader.Start(ctx, consumer); err != nil { // is blocking
-					s.Fail("start consuming messages", err)
-				}
-			}()
+			var eg errgroup.Group
+			eg.Go(func() error {
+				return txreader.Start(ctx, consumer)
+			})
 
 			// publish all messages
 			for _, m := range tt.messages {
@@ -83,6 +77,9 @@ func (s *ConsumerTestSuite) TestConsume() {
 			for i := 0; i < len(tt.wantReceived); i++ {
 				received = append(received, <-receiveCh)
 			}
+
+			s.Require().NoError(txreader.Stop(), "must not return error on stop")
+			s.Require().NoError(eg.Wait(), "must not return error on starting")
 
 			s.Assert().ElementsMatch(tt.wantReceived, received, "should consume expected messages")
 		})
