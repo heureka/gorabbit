@@ -49,7 +49,6 @@ consumer.Start(context.Background(), gorabbit.ProcessorFunc(func(ctx context.Con
     }
     return nil
 }))
-
 ```
 See full example at [examples/consumer](./examples/consumer/main.go).
 
@@ -124,7 +123,6 @@ p.PublishWithContext(
     false,
     amqp.Publishing{Body: []byte("hello world!")},
 )
-
 ```
 
 See full example at [examples/publish](./examples/publish/main.go).
