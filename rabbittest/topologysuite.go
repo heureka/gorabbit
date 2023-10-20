@@ -1,6 +1,12 @@
 package rabbittest
 
 // TopologySuite uses ChannelSuite to create channel and then creates new topology using this channel.
+// It is possible to override created exchange, queue or routing key by overriding SetupTest method:
+//
+//	func (s *MySuite) SetupTest() {
+//		s.TopologySuite.Queue = "other-queue-name"
+//		s.TopologySuite.SetupTest()
+//	}
 type TopologySuite struct {
 	ChannelSuite
 
@@ -14,7 +20,9 @@ type TopologySuite struct {
 func (s *TopologySuite) SetupTest() {
 	s.ChannelSuite.SetupTest()
 
-	s.Exchange = "my-Exchange"
+	if s.Exchange == "" {
+		s.Exchange = "my-Exchange"
+	}
 	if err := s.Channel.ExchangeDeclare(
 		s.Exchange,
 		"topic",
@@ -27,7 +35,9 @@ func (s *TopologySuite) SetupTest() {
 		s.FailNow("declare exchange", err)
 	}
 
-	s.Queue = "my-Queue"
+	if s.Queue == "" {
+		s.Queue = "my-Queue"
+	}
 	if _, err := s.Channel.QueueDeclare(
 		s.Queue,
 		false,
@@ -39,7 +49,9 @@ func (s *TopologySuite) SetupTest() {
 		s.FailNow("declare queue", err)
 	}
 
-	s.Key = "my-Key"
+	if s.Key == "" {
+		s.Key = "my-Key"
+	}
 	if err := s.Channel.QueueBind(
 		s.Queue,
 		s.Key,
