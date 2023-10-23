@@ -1,4 +1,4 @@
-package gorabbit
+package consumer
 
 import (
 	"context"
@@ -26,12 +26,13 @@ type Channel interface {
 	Close() error
 }
 
-// NewConsumer creates new RabbitMQ Consumer.
-// Default configuration will create a durable queue and is ready for competing consumers.
+// New creates new RabbitMQ Consumer.
+// By default, it will consume with autoAck=false, exclusive=false, noWait=false, and empty args.
+// Pass Options to configure it as you wish.
 //
 // An empty consumer name will cause the library to generate a unique identity.
 // An empty queue name will cause the broker to generate a unique name https://www.rabbitmq.com/queues.html#server-named-queues.
-func NewConsumer(channel Channel, queue string, ops ...Option) *Consumer {
+func New(channel Channel, queue string, ops ...Option) *Consumer {
 	cfg := consumeCfg{
 		tag:       "", // amqp will generate unique ID if not set
 		autoAck:   false,
