@@ -1,4 +1,4 @@
-package gorabbit
+package consumer
 
 import (
 	"testing"

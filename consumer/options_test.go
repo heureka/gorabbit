@@ -1,4 +1,4 @@
-package gorabbit
+package consumer
 
 import (
 	"testing"
@@ -6,7 +6,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestUnitConsumeOptions(t *testing.T) {
+func TestUnitOptions(t *testing.T) {
 	wantConfig := consumeCfg{
 		tag:       "test",
 		autoAck:   true,
@@ -17,10 +17,10 @@ func TestUnitConsumeOptions(t *testing.T) {
 
 	ops := []Option{
 		WithConsumerTag("test"),
-		WithConsumeAutoAck(),
-		WithConsumeExclusive(),
-		WithConsumeNoWait(),
-		WithConsumeArgs(map[string]interface{}{"some": "arg"}),
+		WithAutoAck(),
+		WithExclusive(),
+		WithNoWait(),
+		WithArgs(map[string]interface{}{"some": "arg"}),
 	}
 
 	cfg := consumeCfg{

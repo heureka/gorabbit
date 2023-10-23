@@ -1,4 +1,4 @@
-package gorabbit
+package consumer
 
 import amqp "github.com/rabbitmq/amqp091-go"
 
@@ -13,31 +13,31 @@ func WithConsumerTag(tag string) Option {
 	}
 }
 
-// WithConsumeAutoAck sets the server to acknowledge deliveries to this consumer
+// WithAutoAck sets the server to acknowledge deliveries to this consumer
 // prior to writing the delivery to the network.
-func WithConsumeAutoAck() Option {
+func WithAutoAck() Option {
 	return func(c *consumeCfg) {
 		c.autoAck = true
 	}
 }
 
-// WithConsumeExclusive sets the server to ensure that this is the sole consumer from this queue.
-func WithConsumeExclusive() Option {
+// WithExclusive sets the server to ensure that this is the sole consumer from this queue.
+func WithExclusive() Option {
 	return func(c *consumeCfg) {
 		c.exclusive = true
 	}
 }
 
-// WithConsumeNoWait sets the server to not wait to confirm the request
+// WithNoWait sets the server to not wait to confirm the request
 // and immediately begin deliveries.
-func WithConsumeNoWait() Option {
+func WithNoWait() Option {
 	return func(c *consumeCfg) {
 		c.noWait = true
 	}
 }
 
-// WithConsumeArgs sets additional arguments for consuming.
-func WithConsumeArgs(args amqp.Table) Option {
+// WithArgs sets additional arguments for consuming.
+func WithArgs(args amqp.Table) Option {
 	return func(c *consumeCfg) {
 		c.args = args
 	}
