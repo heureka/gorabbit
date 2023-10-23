@@ -19,7 +19,7 @@ type TestSuite struct {
 }
 
 func (s *TestSuite) SetupTest() {
-	ch, err := channel.New(s.Connection)
+	ch, err := channel.New(s.Connection.Connection)
 	if err != nil {
 		s.FailNow("should not return error", err)
 	}
@@ -111,7 +111,7 @@ func (s *TestSuite) TestGracefulShutdown() {
 		s.FailNow("declare queue", err)
 	}
 	defer func() {
-		ch, err := channel.New(s.Connection) // create new channel, as previous was closed
+		ch, err := channel.New(s.Connection.Connection) // create new channel, as previous was closed
 		if err != nil {
 			s.FailNow("create channel", err)
 		}

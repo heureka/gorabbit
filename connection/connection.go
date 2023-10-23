@@ -5,6 +5,7 @@ import (
 	"sync"
 
 	"github.com/cenkalti/backoff/v4"
+	"github.com/heureka/gorabbit/channel"
 	amqp "github.com/rabbitmq/amqp091-go"
 )
 
@@ -45,16 +46,17 @@ func Dial(url string, ops ...Option) (*Redialer, error) {
 // Option to configure Reconnector.
 type Option func(r *Redialer)
 
-// Channel opens new amqp.Channel.
-// Will create connection if channel is closed.
-func (r *Redialer) Channel() (*amqp.Channel, error) {
+// Channel create new channel.Reopener with channel re-open capabilities.
+// Will re-dial if connection is closed.
+// Access original channel with r.Connection.Channel().
+func (r *Redialer) Channel(ops ...channel.Option) (*channel.Reopener, error) {
 	if r.IsClosed() {
 		if err := r.dial(r.cfg); err != nil {
 			return nil, err
 		}
 	}
 
-	return r.Connection.Channel()
+	return channel.New(r.Connection, ops...)
 }
 
 func (r *Redialer) dial(cfg amqp.Config) error {
