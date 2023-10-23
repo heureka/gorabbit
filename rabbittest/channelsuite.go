@@ -1,12 +1,14 @@
 package rabbittest
 
-import amqp "github.com/rabbitmq/amqp091-go"
+import (
+	"github.com/heureka/gorabbit/channel"
+)
 
 // ChannelSuite uses ConnectionSuite to create connection and then creates new channel for each test.
 type ChannelSuite struct {
 	ConnectionSuite
 
-	Channel *amqp.Channel
+	Channel *channel.Reopener
 }
 
 // SetupTest creates new channel.
