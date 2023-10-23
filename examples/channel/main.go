@@ -20,8 +20,7 @@ func main() {
 	bo.MaxElapsedTime = 10 * time.Second
 
 	// create new channel with re-creation capabilities.
-	ch, err := channel.New(
-		conn,
+	ch, err := conn.Channel(
 		// set up different backoff strategy.
 		channel.WithBackoff(bo),
 		// set QOS to pre-fetch 100 messages, it will be applied every time channel is created.
@@ -41,7 +40,7 @@ func main() {
 	if err != nil {
 		log.Panic(err)
 	}
-
+	// get notification when channel will be re-opened.
 	reopenNotif := ch.NotifyReopen(make(chan error)) // reopenNotif will be closed on graceful shutdown
 	go func() {
 		for err := range reopenNotif {
@@ -53,7 +52,8 @@ func main() {
 			log.Println("successfully re-opened channel", err)
 		}
 	}()
-
+	// get notification when consuming has started,
+	// notification will be sent on every channel re-opening and resuming of consuming.
 	consumeNotif := ch.NotifyConsume(make(chan error)) // consumeNotif will be closed on graceful shutdown
 	go func() {
 		for err := range consumeNotif {

@@ -3,40 +3,32 @@ package main
 import (
 	"context"
 	"log"
+	"os"
 	"time"
 
 	"github.com/heureka/gorabbit"
-	"github.com/heureka/gorabbit/channel"
-	"github.com/heureka/gorabbit/connection"
-	"github.com/heureka/gorabbit/process"
+	"github.com/heureka/gorabbit/consume"
+	"github.com/heureka/gorabbit/consume/batch"
+	"github.com/rs/zerolog"
 )
 
 func main() {
-	// connection with re-dialing capabilities.
-	conn, err := connection.Dial("amqp://localhost:5672")
+	consumer, err := gorabbit.NewConsumer("amqp://localhost:5672", "my-queue")
 	if err != nil {
 		log.Panic(err)
 	}
-
-	// channel with re-connection capabilities.
-	ch, err := channel.New(conn)
-	if err != nil {
-		log.Panic(err)
-	}
-
-	consumer := gorabbit.NewConsumer(ch, "my-queue")
 
 	// transaction function for processing batch of messages
 	tx := func(ctx context.Context, msgs [][]byte) []error {
 		for _, msg := range msgs {
 			log.Println(string(msg))
 		}
-
-		return nil
+		// must return errors one-to-one for each processed message, no errors in this case
+		return make([]error, len(msgs))
 	}
 
 	// process 100 messages or 1 second of messages at once, whichever comes first
-	err = consumer.Start(context.Background(), process.InBatches(100, time.Second, tx, false))
+	err = consumer.Start(context.Background(), consume.InBatches(100, time.Second, tx, false, batch.NewDeliveryLogging(zerolog.New(os.Stdout))))
 	if err != nil {
 		log.Panic(err)
 	}

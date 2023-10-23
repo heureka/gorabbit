@@ -32,7 +32,7 @@ func main() {
 		}),
 		// configure connection as you wish on each successful dial.
 		connection.WithDialledCallback(func(conn *amqp.Connection) {
-			// add listener for clos notification
+			// for example, add listener for close notification
 			closeNotif := conn.NotifyClose(make(chan *amqp.Error))
 			go func() {
 				for err := range closeNotif {
@@ -45,5 +45,5 @@ func main() {
 		log.Panic(err)
 	}
 
-	conn.Channel() // crate new channel, do whatever you do with connection.
+	conn.Channel() // crate new channel or do whatever you do with connection.
 }
