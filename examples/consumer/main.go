@@ -6,34 +6,22 @@ import (
 	"time"
 
 	"github.com/heureka/gorabbit"
-	"github.com/heureka/gorabbit/channel"
-	"github.com/heureka/gorabbit/connection"
+	"github.com/heureka/gorabbit/consumer"
 	amqp "github.com/rabbitmq/amqp091-go"
 )
 
 func main() {
-	// connection with re-dialing capabilities.
-	conn, err := connection.Dial("amqp://localhost:5672")
-	if err != nil {
-		log.Panic(err)
-	}
-
-	// channel with re-connection capabilities.
-	ch, err := channel.New(conn)
-	if err != nil {
-		log.Panic(err)
-	}
-
-	consumer := gorabbit.NewConsumer(
-		ch,
+	cons, err := gorabbit.NewConsumer(
+		"amqp://localhost:5672",
 		"example-queue",
-		gorabbit.WithConsumerTag("example-consumer"),           // set up custom consumer tag
-		gorabbit.WithConsumeArgs(amqp.Table{"example": "tag"}), // add additional consumer tags
-		gorabbit.WithConsumeAutoAck(),                          // automatically ACK all messages
-		gorabbit.WithConsumeExclusive(),                        // tell the server to ensure that this is the sole consumer from this queue
-		gorabbit.WithConsumeNoWait(),                           //  tell the server to immediately begin deliveries
+		consumer.WithConsumerTag("example-consumer"),    // set up custom consumer tag
+		consumer.WithArgs(amqp.Table{"example": "tag"}), // add additional consumer tags
+		consumer.WithAutoAck(),                          // automatically ACK all messages
+		consumer.WithExclusive(),                        // tell the server to ensure that this is the sole consumer from this queue
+		consumer.WithNoWait(),                           //  tell the server to immediately begin deliveries
 	)
-	err = consumer.Start(context.Background(), gorabbit.ProcessFunc(func(ctx context.Context, deliveries <-chan amqp.Delivery) error {
+	// see also examples/one and examples/batch for examples of prepared ProcessFunc.
+	err = cons.Start(context.Background(), consumer.ProcessFunc(func(ctx context.Context, deliveries <-chan amqp.Delivery) error {
 		for d := range deliveries {
 			log.Println(d.Body)
 		}
@@ -44,7 +32,7 @@ func main() {
 	}
 
 	time.Sleep(10 * time.Second) // consumer for 10 seconds
-	if err := consumer.Stop(); err != nil {
+	if err := cons.Stop(); err != nil {
 		log.Panic(err)
 	}
 }

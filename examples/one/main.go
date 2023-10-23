@@ -3,35 +3,27 @@ package one
 import (
 	"context"
 	"log"
+	"os"
 	"time"
 
 	"github.com/heureka/gorabbit"
-	"github.com/heureka/gorabbit/channel"
-	"github.com/heureka/gorabbit/connection"
-	"github.com/heureka/gorabbit/process"
+	"github.com/heureka/gorabbit/consume"
+	"github.com/heureka/gorabbit/consume/one"
+	"github.com/rs/zerolog"
 )
 
 func main() {
-	// connection with re-dialing capabilities.
-	conn, err := connection.Dial("amqp://localhost:5672")
+	consumer, err := gorabbit.NewConsumer("amqp://localhost:5672", "my-queue")
 	if err != nil {
 		log.Panic(err)
 	}
-
-	// channel with re-connection capabilities.
-	ch, err := channel.New(conn)
-	if err != nil {
-		log.Panic(err)
-	}
-
-	consumer := gorabbit.NewConsumer(ch, "my-queue")
 	// transaction function for processing single message
 	tx := func(ctx context.Context, msg []byte) error {
 		log.Println(string(msg))
 		return nil
 	}
 
-	err = consumer.Start(context.Background(), process.ByOne(tx, false))
+	err = consumer.Start(context.Background(), consume.ByOne(tx, false, one.NewDeliveryLogging(zerolog.New(os.Stdout))))
 	if err != nil {
 		log.Panic(err)
 	}
