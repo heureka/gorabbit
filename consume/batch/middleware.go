@@ -1,17 +1,16 @@
-package middleware
+package batch
 
 import (
 	"context"
 
+	"github.com/heureka/gorabbit/consume"
 	amqp "github.com/rabbitmq/amqp091-go"
 	"github.com/rs/zerolog"
-
-	"github.com/heureka/gorabbit/process"
 )
 
-// NewBatchDeliveryLogging creates batch middleware which logs all incoming deliveries.
-func NewBatchDeliveryLogging(logger zerolog.Logger) process.BatchMiddleware {
-	return func(handler process.BatchDeliveryHandler) process.BatchDeliveryHandler {
+// NewDeliveryLogging creates batch middleware which logs all incoming deliveries.
+func NewDeliveryLogging(logger zerolog.Logger) consume.BatchMiddleware {
+	return func(handler consume.BatchDeliveryHandler) consume.BatchDeliveryHandler {
 		return func(ctx context.Context, deliveries []amqp.Delivery) []error {
 			for i := range deliveries {
 				d := &deliveries[i]
@@ -27,9 +26,9 @@ func NewBatchDeliveryLogging(logger zerolog.Logger) process.BatchMiddleware {
 	}
 }
 
-// NewBatchErrorLogging creates batch middleware which logs all processing errors.
-func NewBatchErrorLogging(logger zerolog.Logger) process.BatchMiddleware {
-	return func(handler process.BatchDeliveryHandler) process.BatchDeliveryHandler {
+// NewErrorLogging creates batch middleware which logs all processing errors.
+func NewErrorLogging(logger zerolog.Logger) consume.BatchMiddleware {
+	return func(handler consume.BatchDeliveryHandler) consume.BatchDeliveryHandler {
 		return func(ctx context.Context, deliveries []amqp.Delivery) []error {
 			status := handler(ctx, deliveries)
 			for _, err := range status {

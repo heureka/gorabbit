@@ -1,17 +1,16 @@
-package middleware
+package one
 
 import (
 	"context"
 
+	"github.com/heureka/gorabbit/consume"
 	amqp "github.com/rabbitmq/amqp091-go"
 	"github.com/rs/zerolog"
-
-	"github.com/heureka/gorabbit/process"
 )
 
 // NewDeliveryLogging creates middleware which logs all incoming deliveries.
-func NewDeliveryLogging(logger zerolog.Logger) process.Middleware {
-	return func(h process.DeliveryHandler) process.DeliveryHandler {
+func NewDeliveryLogging(logger zerolog.Logger) consume.Middleware {
+	return func(h consume.DeliveryHandler) consume.DeliveryHandler {
 		return func(ctx context.Context, d amqp.Delivery) error {
 			logger.Info().
 				Int("bytes", len(d.Body)).
@@ -24,8 +23,8 @@ func NewDeliveryLogging(logger zerolog.Logger) process.Middleware {
 }
 
 // NewErrorLogging creates middleware which logs all processing errors.
-func NewErrorLogging(logger zerolog.Logger) process.Middleware {
-	return func(h process.DeliveryHandler) process.DeliveryHandler {
+func NewErrorLogging(logger zerolog.Logger) consume.Middleware {
+	return func(h consume.DeliveryHandler) consume.DeliveryHandler {
 		return func(ctx context.Context, d amqp.Delivery) error {
 			err := h(ctx, d)
 			if err != nil {
