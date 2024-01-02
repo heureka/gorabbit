@@ -3,10 +3,16 @@ package connection
 import (
 	"fmt"
 	"sync"
+	"time"
 
 	"github.com/cenkalti/backoff/v4"
 	"github.com/heureka/gorabbit/channel"
 	amqp "github.com/rabbitmq/amqp091-go"
+)
+
+const (
+	defaultHeartbeat = 10 * time.Second
+	defaultLocale    = "en_US"
 )
 
 // Redialer wraps connection to add re-dial capabilities.
@@ -25,9 +31,14 @@ type Redialer struct {
 // Dial is a regular amqp.Dial with re-dialing and backoff.
 func Dial(url string, ops ...Option) (*Redialer, error) {
 	redialer := Redialer{
-		mux:       sync.Mutex{},
-		url:       url,
-		cfg:       amqp.Config{},
+		mux: sync.Mutex{},
+		url: url,
+		cfg: amqp.Config{
+			// defaults are the same as in amqp091-go:
+			// https://github.com/rabbitmq/amqp091-go/blob/a6fa7f7d76ecb00f1f46d42d02adfe0454c5514f/connection.go#L160
+			Heartbeat: defaultHeartbeat,
+			Locale:    defaultLocale,
+		},
 		backoff:   backoff.NewExponentialBackOff(),
 		onDialled: nil,
 	}
