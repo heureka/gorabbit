@@ -1,33 +1,33 @@
-package publish_test
+package publisher_test
 
 import (
 	"context"
 	"testing"
 
-	"github.com/heureka/gorabbit/publish"
+	"github.com/heureka/gorabbit/publisher"
 	amqp "github.com/rabbitmq/amqp091-go"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 func TestWrap(t *testing.T) {
-	mw1 := func(channel publish.Channel) publish.Channel {
-		return publish.ChannelFunc(func(ctx context.Context, exchange, key string, mandatory, immediate bool, msg amqp.Publishing) error {
+	mw1 := func(channel publisher.Channel) publisher.Channel {
+		return publisher.ChannelFunc(func(ctx context.Context, exchange, key string, mandatory, immediate bool, msg amqp.Publishing) error {
 			msg.Body = append(msg.Body, '1')
 
 			return channel.PublishWithContext(ctx, exchange, key, mandatory, immediate, msg)
 		})
 	}
 
-	mw2 := func(channel publish.Channel) publish.Channel {
-		return publish.ChannelFunc(func(ctx context.Context, exchange, key string, mandatory, immediate bool, msg amqp.Publishing) error {
+	mw2 := func(channel publisher.Channel) publisher.Channel {
+		return publisher.ChannelFunc(func(ctx context.Context, exchange, key string, mandatory, immediate bool, msg amqp.Publishing) error {
 			msg.Body = append(msg.Body, '2')
 
 			return channel.PublishWithContext(ctx, exchange, key, mandatory, immediate, msg)
 		})
 	}
 	ch := &fakeChannel{}
-	wrapped := publish.Wrap(ch, mw1, mw2)
+	wrapped := publisher.Wrap(ch, mw1, mw2)
 	err := wrapped.PublishWithContext(context.TODO(), "test", "test", false, false, amqp.Publishing{})
 	require.NoError(t, err)
 

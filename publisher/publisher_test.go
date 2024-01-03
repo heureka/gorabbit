@@ -5,7 +5,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/heureka/gorabbit/publish"
 	"github.com/heureka/gorabbit/publisher"
 	amqp "github.com/rabbitmq/amqp091-go"
 	"github.com/stretchr/testify/assert"
@@ -26,13 +25,13 @@ func TestUnitPublish(t *testing.T) {
 	message := []byte(`test message`)
 
 	tests := map[string]struct {
-		options           []publisher.Option
-		publishMiddleware []publish.Middleware
+		middlewares       []publisher.Middleware
+		publishMiddleware []publisher.Middleware
 		publishError      error
 		wantCallArgs      callArgs
 		wantError         error
 	}{
-		"no options": {
+		"no middlewares": {
 			wantCallArgs: callArgs{
 				exchange:  exchange,
 				key:       routingKey,
@@ -58,9 +57,9 @@ func TestUnitPublish(t *testing.T) {
 			publishError: assert.AnError,
 			wantError:    assert.AnError,
 		},
-		"all options": {
-			options: []publisher.Option{
-				publisher.WithConstHeaders(amqp.Table{"test": "header"}),
+		"all middlewares": {
+			middlewares: []publisher.Middleware{
+				publisher.WithHeaders(amqp.Table{"test": "header"}),
 				publisher.WithTransientDeliveryMode(),
 				publisher.WithMandatory(),
 				publisher.WithImmediate(),
@@ -81,16 +80,16 @@ func TestUnitPublish(t *testing.T) {
 			},
 		},
 		"publish middlewares": {
-			options: []publisher.Option{
-				publisher.WithConstHeaders(amqp.Table{"test": "header"}),
+			middlewares: []publisher.Middleware{
+				publisher.WithHeaders(amqp.Table{"test": "header"}),
 				publisher.WithTransientDeliveryMode(),
 				publisher.WithMandatory(),
 				publisher.WithImmediate(),
 				publisher.WithExpiration(time.Second),
 			},
-			publishMiddleware: []publish.Middleware{
-				publish.WithHeaders(amqp.Table{"test": "other-header", "test2": "header"}),
-				publish.WithExpiration(2 * time.Second),
+			publishMiddleware: []publisher.Middleware{
+				publisher.WithHeaders(amqp.Table{"test": "other-header", "test2": "header"}),
+				publisher.WithExpiration(2 * time.Second),
 			},
 			wantCallArgs: callArgs{
 				exchange:  exchange,
@@ -120,7 +119,7 @@ func TestUnitPublish(t *testing.T) {
 				tt.wantCallArgs.msg,
 			).Return(tt.publishError)
 
-			pub := publisher.New(channel, exchange, tt.options...)
+			pub := publisher.New(channel, exchange, tt.middlewares...)
 			err := pub.Publish(context.TODO(), routingKey, message, tt.publishMiddleware...)
 			if tt.wantError != nil {
 				assert.ErrorIs(t, err, tt.wantError)

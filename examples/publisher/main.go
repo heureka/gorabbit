@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/heureka/gorabbit"
-	"github.com/heureka/gorabbit/publish"
 	"github.com/heureka/gorabbit/publisher"
 	amqp "github.com/rabbitmq/amqp091-go"
 )
@@ -15,7 +14,7 @@ func main() {
 	pub, err := gorabbit.NewPublisher(
 		"amqp://localhost:5672",
 		"example-exchange",
-		publisher.WithConstHeaders(amqp.Table{"x-example-header": "example-value"}),
+		publisher.WithHeaders(amqp.Table{"x-example-header": "example-value"}),
 		publisher.WithTransientDeliveryMode(),
 		publisher.WithImmediate(),
 		publisher.WithMandatory(),
@@ -36,12 +35,12 @@ func main() {
 		"example-key",
 		[]byte("hello again!"),
 		// add headers
-		publish.WithHeaders(amqp.Table{"x-other-header": "only for thing publishing"}),
+		publisher.WithHeaders(amqp.Table{"x-other-header": "only for thing publishing"}),
 		// set another expiration
-		publish.WithExpiration(time.Hour),
+		publisher.WithExpiration(time.Hour),
 		// custom overriding
-		func(channel publish.Channel) publish.Channel {
-			return publish.ChannelFunc(func(ctx context.Context, exchange, key string, mandatory, immediate bool, msg amqp.Publishing) error {
+		func(channel publisher.Channel) publisher.Channel {
+			return publisher.ChannelFunc(func(ctx context.Context, exchange, key string, mandatory, immediate bool, msg amqp.Publishing) error {
 				// set another exchange only for this publishing
 				return channel.PublishWithContext(ctx, "other-exchange", key, mandatory, immediate, msg)
 			})
