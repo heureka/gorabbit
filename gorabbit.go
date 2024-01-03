@@ -24,13 +24,13 @@ func NewConsumer(url string, queue string, ops ...consumer.Option) (*consumer.Co
 // NewPublisher creates a new published to RabbitMQ, which will publish to exchange.
 // Will automatically re-open channel on channel errors.
 // Reconnection is done with exponential backoff.
-func NewPublisher(url string, exchange string, ops ...publisher.Option) (publisher.Publisher, error) {
+func NewPublisher(url string, exchange string, mws ...publisher.Middleware) (publisher.Publisher, error) {
 	ch, err := prepareChannel(url)
 	if err != nil {
 		return publisher.Publisher{}, err
 	}
 
-	return publisher.New(ch, exchange, ops...), nil
+	return publisher.New(ch, exchange, mws...), nil
 }
 
 func prepareChannel(url string) (*channel.Reopener, error) {

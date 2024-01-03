@@ -1,4 +1,5 @@
 current_dir = $(shell pwd)
+netrc_file = "${HOME}/.netrc"
 
 # based on https://gist.github.com/prwhite/8168133
 help: ## show this help

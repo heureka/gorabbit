@@ -1,11 +1,11 @@
-package publish_test
+package publisher_test
 
 import (
 	"context"
 	"testing"
 	"time"
 
-	"github.com/heureka/gorabbit/publish"
+	"github.com/heureka/gorabbit/publisher"
 	amqp "github.com/rabbitmq/amqp091-go"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -36,7 +36,7 @@ func TestPublishWithHeaders(t *testing.T) {
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
 			channel := &fakeChannel{}
-			wrapped := publish.Wrap(channel, publish.WithHeaders(headers))
+			wrapped := publisher.Wrap(channel, publisher.WithHeaders(headers))
 
 			err := wrapped.PublishWithContext(context.TODO(), "test", "test", false, false, tt.msg)
 			require.NoError(t, err)
@@ -50,7 +50,7 @@ func TestPublishWithHeaders(t *testing.T) {
 
 func TestPublishWithExpiration(t *testing.T) {
 	channel := &fakeChannel{}
-	wrapped := publish.Wrap(channel, publish.WithExpiration(time.Second))
+	wrapped := publisher.Wrap(channel, publisher.WithExpiration(time.Second))
 
 	err := wrapped.PublishWithContext(context.TODO(), "test", "test", false, false, amqp.Publishing{})
 	require.NoError(t, err)

@@ -3,52 +3,34 @@ package publisher
 import (
 	"context"
 
-	"github.com/heureka/gorabbit/publish"
 	amqp "github.com/rabbitmq/amqp091-go"
 )
 
 // Publisher is a Publisher to RabbiMQ.
 type Publisher struct {
-	channel      publish.Channel
-	exchange     string
-	headers      amqp.Table
-	deliveryMode uint8
-	mandatory    bool
-	immediate    bool
-	expiration   string
+	channel     Channel
+	middlewares []Middleware
+	exchange    string
 }
 
 // New creates new RabbitMQ Publisher.
 // By default, it will publish with Persistent delivery mode, mandatory=false, immediate=false and empty args.
 // Pass Options to configure it as you wish.
-func New(channel publish.Channel, exchange string, ops ...Option) Publisher {
-	pub := Publisher{
-		channel:      channel,
-		exchange:     exchange,
-		headers:      nil,
-		deliveryMode: amqp.Persistent,
-		mandatory:    false,
-		immediate:    false,
-		expiration:   "",
+func New(channel Channel, exchange string, mws ...Middleware) Publisher {
+	return Publisher{
+		channel:     channel,
+		middlewares: mws,
+		exchange:    exchange,
 	}
-
-	for _, op := range ops {
-		op(&pub)
-	}
-
-	return pub
 }
 
-// Publish message with routing key.
-func (p Publisher) Publish(ctx context.Context, key string, message []byte, mws ...publish.Middleware) error {
+// Publish message with routing key. Allows to override middleware for one publishing.
+func (p Publisher) Publish(ctx context.Context, key string, message []byte, mws ...Middleware) error {
 	publishing := amqp.Publishing{
-		Headers:      p.headers,
-		DeliveryMode: p.deliveryMode,
-		Expiration:   p.expiration,
+		DeliveryMode: amqp.Persistent,
 		Body:         message,
 	}
-	channel := publish.Wrap(p.channel, mws...)
+	channel := Wrap(p.channel, append(p.middlewares, mws...)...)
 
-	return channel.PublishWithContext(ctx, p.exchange, key, p.mandatory, p.immediate, publishing)
-
+	return channel.PublishWithContext(ctx, p.exchange, key, false, false, publishing)
 }
