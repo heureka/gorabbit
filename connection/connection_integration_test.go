@@ -26,8 +26,8 @@ func (s *TestSuite) SetupSuite() {
 
 	s.rmqURL = rmqURL
 	bo := backoff.NewExponentialBackOff()
-	bo.InitialInterval = 10 * time.Millisecond
-	bo.MaxElapsedTime = 5 * time.Second
+	bo.InitialInterval = 1 * time.Second
+	bo.MaxElapsedTime = 20 * time.Second
 	s.backoff = backoff.WithMaxRetries(bo, 5)
 }
 
