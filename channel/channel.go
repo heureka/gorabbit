@@ -136,11 +136,15 @@ func (r *Reopener) Consume(
 			select {
 			case amqpErr := <-channelClosedCh:
 				if amqpErr == nil { // on graceful close no error will be sent
+					r.mux.Lock()
 					closeAll(append(r.onConsume, r.onReopen...))
+					r.mux.Unlock()
 					return
 				}
 			default: // if no channelClosed notification received, that means delivering was closed by user
+				r.mux.Lock()
 				closeAll(append(r.onConsume, r.onReopen...))
+				r.mux.Unlock()
 				return
 			}
 		}
