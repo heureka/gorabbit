@@ -52,7 +52,7 @@ func TestUnitOneConsume(t *testing.T) {
 			wantErr: nil,
 		},
 		"reject error": {
-			txErr:     errors.New("some error"),
+			txErr:     assert.AnError,
 			rejectErr: assert.AnError,
 			wantErr:   assert.AnError,
 		},
