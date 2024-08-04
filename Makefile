@@ -23,4 +23,4 @@ golangci: ## runs golangci-lint
 		-v $(current_dir):/app \
 		-v ${netrc_file}:/root/.netrc \
 		-w /app \
-		golangci/golangci-lint:v1.52.2-alpine golangci-lint run --timeout 2m
+		golangci/golangci-lint:v1.58.2-alpine golangci-lint run --timeout 2m
