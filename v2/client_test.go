@@ -5,7 +5,6 @@ import (
 	"context"
 	"errors"
 	"net"
-	"os"
 	"testing"
 	"time"
 
@@ -22,17 +21,12 @@ func TestMain(m *testing.M) {
 }
 
 func TestReconnectsOnClosedChannel(t *testing.T) {
-	rmqURL := os.Getenv("RABBITMQ_URL")
-	if rmqURL == "" {
-		t.Fatal("please provide rabbitMQ URL via RABBITMQ_URL environment variable")
-	}
-
 	t.Run("publishing", func(t *testing.T) {
 		exchange, queue, key := t.Name(), t.Name(), t.Name()
 		setup(t, exchange, queue, key)
 
-		client := gorabbit.New(
-			rmqURL,
+		client := rabbittest.NewClient(
+			t,
 			gorabbit.WithOnChannelClosed(func(err error) {
 				t.Logf("channel closed: %s", err)
 			}),
@@ -60,8 +54,8 @@ func TestReconnectsOnClosedChannel(t *testing.T) {
 		exchange, queue, key := t.Name(), t.Name(), t.Name()
 		channel := setup(t, exchange, queue, key)
 
-		client := gorabbit.New(
-			rmqURL,
+		client := rabbittest.NewClient(
+			t,
 			gorabbit.WithOnChannelClosed(func(err error) {
 				t.Logf("channel closed: %s", err)
 			}),
@@ -104,8 +98,8 @@ func TestReconnectsOnClosedChannel(t *testing.T) {
 		exchange, queue, key := t.Name(), t.Name(), t.Name()
 		setup(t, exchange, queue, key)
 
-		client := gorabbit.New(
-			rmqURL,
+		client := rabbittest.NewClient(
+			t,
 			gorabbit.WithOnChannelClosed(func(err error) {
 				t.Logf("channel closed: %s", err)
 			}),
@@ -330,17 +324,12 @@ func causeException(t *testing.T, channel *amqp.Channel) {
 func breakableClient(t *testing.T, signal chan struct{}) *gorabbit.Client {
 	t.Helper()
 
-	rmqURL := os.Getenv("RABBITMQ_URL")
-	if rmqURL == "" {
-		t.Fatal("please provide rabbitMQ URL via RABBITMQ_URL environment variable")
-	}
-
 	bo := backoff.NewExponentialBackOff()
 	bo.MaxElapsedTime = 2 * time.Second
 	bo.InitialInterval = 10 * time.Millisecond
 
-	client := gorabbit.New(
-		rmqURL,
+	client := rabbittest.NewClient(
+		t,
 		gorabbit.WithBackoff(bo),
 		gorabbit.WithOnChannelClosed(func(err error) {
 			t.Logf("channel closed: %s", err)
