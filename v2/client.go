@@ -155,10 +155,12 @@ func (c *Client) IsReady() bool {
 	default:
 	}
 
-	ready := c.mux.TryLock()
-	defer c.mux.Unlock()
+	if c.mux.TryLock() {
+		c.mux.Unlock()
+		return true
+	}
 
-	return ready
+	return false
 }
 
 func (c *Client) fatal(err error) {
